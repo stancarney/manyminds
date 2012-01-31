@@ -1,8 +1,54 @@
+<html>
+<head>
 <script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
 <script>
-  var socket = io.connect('http://localhost":8080');
-  socket.on('news', function (data) {
-    console.log(data);
-    socket.emit('my other event', { my: 'data' });
+	var socket;
+
+	$(function() {
+	  connect();
+
+		$("#textentry").keypress(function() {
+				 sendMessage('yay');
+		});
   });
+
+	function connect(){
+		socket = io.connect('http://localhost:8080');
+		socket.on('chat', function (data) {
+	    $('#content').append('<ul>' + data + '</ul>');
+		});
+	}
+
+	function sendMessage(msg){
+		socket.emit('message', { value: msg });
+	}
+	
 </script>
+<style type="text/css">
+	#footer {
+    position: relative;
+		margin-top: -5em; /* negative value of footer height */
+		height: 5em;
+		clear:both;
+	}
+</style>
+</head>
+<body>
+  <div class="container-fluid" style="height: 100%">
+    <div class="sidebar">
+      <ul>
+	      nothing here
+      </ul>
+    </div>
+    <div class="content" id="content">
+	    <ul>something</ul>
+    </div>
+  </div>
+	<div id="footer" style="margin-left:240px">
+			<textarea id="textentry" class="xxlarge" style="width:100%;height:5em;" rows="3"></textarea>
+	</div>
+
+</body>
+</html>
