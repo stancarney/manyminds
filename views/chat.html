@@ -1,0 +1,93 @@
+<html>
+<head>
+<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+<script>
+	var socket;
+	var typing = false;
+
+	$(function() {
+	  connect();
+
+		$("#nickname").keyup(function(e) {
+			if(e.keyCode == 13) socket.emit('set nickname', $('#nickname').val());
+		});
+
+		$("#textentry").keyup(function(e) {
+			if(e.keyCode == 13) {
+				var textarea = $('textarea#textentry');
+				socket.emit('message', { value: textarea.val() });
+				textarea.val('');
+			} else {
+				if(!typing) {
+					typing = true;
+					socket.emit('typing');
+				}
+				
+				setTimeout(function() {
+					typing = false;
+				}, 2000);
+			}
+		});
+
+		setInterval(function(){
+			$("ul#users>li.typing").removeClass("typing");
+		}, 5000);
+    });
+
+	function connect(){
+		socket = io.connect('http://localhost:8080');
+
+		socket.emit('set nickname', '{{= user }}');
+
+		socket.on('chat', function (data) {
+	        $('#content').append('<div>' + data.user + ': '+ data.value + '</div>');
+		});
+
+		socket.on('add user', function (data) {
+	        $('#users').append('<li id="user_' + data.id +'">' + data.name + '</li>');
+		});
+
+		socket.on('remove user', function (data) {
+	        $('#user_' + data.id).remove();
+		});
+
+		socket.on('typing', function (data) {
+	        $('#user_' + data.id).addClass('typing');
+		});
+	}
+	
+</script>
+<style type="text/css">
+	ul { list-style-image: url("/images/arrow.gif") }
+
+	.typing {
+		color: #C43C35;
+	}
+
+	#footer {
+    position: relative;
+		margin-top: -5em; /* negative value of footer height */
+		height: 5em;
+		clear:both;
+	}
+</style>
+</head>
+<body>
+  <div class="container-fluid" style="height: 100%">
+    <div class="sidebar">
+      <ul id="users"> </ul>
+    </div>
+    <div class="content" id="content"> </div>
+  </div>
+    <div id="footer">
+	        Nickname:
+			<input type="text" id="nickname" name="nickname" value="{{= user }}" class="span3"/>
+	</div>
+	<div id="footer" style="margin-left:240px">
+			<textarea id="textentry" class="xxlarge" style="width:100%;height:5em;" rows="3"></textarea>
+	</div>
+
+</body>
+</html>
