@@ -1,6 +1,8 @@
-var express = require('express');
-var app = express.createServer()
-		, io = require('socket.io').listen(app);
+var express = require('express')
+		, app = express.createServer()
+		, io = require('socket.io').listen(app)
+		, mongo = require('mongodb')
+		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {});
 
 app.listen(8080);
 
@@ -21,7 +23,7 @@ app.get('/', function (req, res) {
 });
 
 app.post('/chat', function (req, res) {
-	req.session.user = req.body.nickname
+	req.session.user = req.body.nickname;
 	res.redirect('/chat')
 });
 
@@ -42,8 +44,31 @@ io.sockets.on('connection', function (socket) {
 
 	socket.on('message', function (message) {
 		socket.get('nickname', function (err, name) {
+
+			var m = {
+				name: name,
+				message: message.value
+			};
+
+			db.collection('messages', function(err, collection) {
+				collection.insert(m, function(){});
+			});
+
 			socket.emit('chat', { user: name, value: message.value});
 			socket.broadcast.emit('chat', { user: name, value: message.value});
+		});
+	});
+
+	socket.on('refresh', function () {
+		db.collection('messages', function(err, collection) {
+			collection.find({}, function(err, cursor) {
+				cursor.each(function(err, rec) {
+					if(rec != null){ //not sure why this is null sometimes.
+						console.log('name: ' + rec.name, 'message' + rec.message);
+						socket.emit('chat', { user: rec.name, value: rec.message });
+					}
+				});
+			});
 		});
 	});
 
@@ -64,3 +89,4 @@ io.sockets.on('connection', function (socket) {
 	});
 });
 
+db.open(function() {});

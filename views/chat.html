@@ -40,6 +40,7 @@
 		socket = io.connect('http://localhost:8080');
 
 		socket.emit('set nickname', '{{= user }}');
+		socket.emit('refresh');
 
 		socket.on('chat', function (data) {
 	        $('#content').append('<div>' + data.user + ': '+ data.value + '</div>');
