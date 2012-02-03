@@ -9,10 +9,11 @@ app.listen(8080);
 app.use(express.cookieParser());
 app.use(express.session({ secret: "keyboard cat" }));
 app.use(express.bodyParser());
+app.use("/public", express.static(__dirname + '/public'));
 
 app.set('view options', {
-    open: '{{',
-    close: '}}',
+	open: '{{',
+	close: '}}',
 	layout: false
 });
 
@@ -69,7 +70,7 @@ io.sockets.on('connection', function (socket) {
 		db.collection('messages', function(err, collection) {
 			collection.find({}, function(err, cursor) {
 				cursor.each(function(err, rec) {
-					if(rec != null){ //not sure why this is null sometimes.
+					if (rec != null) { //not sure why this is null sometimes.
 						console.log('name: ' + rec.nickname, 'message' + rec.message);
 						socket.emit('chat', rec);
 					}
@@ -95,10 +96,12 @@ io.sockets.on('connection', function (socket) {
 	});
 });
 
-db.open(function() {});
+db.open(function() {
+});
 
 function save(message) {
 	db.collection('messages', function(err, collection) {
-		collection.insert(message, function(){});
+		collection.insert(message, function() {
+		});
 	});
 }
