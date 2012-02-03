@@ -43,11 +43,11 @@
 		socket.emit('refresh');
 
 		socket.on('chat', function (data) {
-	        $('#content').append('<div>' + data.user + ': '+ data.value + '</div>');
+	        $('#content').append('<div>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
 		});
 
 		socket.on('add user', function (data) {
-	        $('#users').append('<li id="user_' + data.id +'">' + data.name + '</li>');
+	        $('#users').append('<li id="user_' + data.id +'">' + data.nickname + '</li>');
 		});
 
 		socket.on('remove user', function (data) {

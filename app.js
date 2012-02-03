@@ -31,31 +31,37 @@ app.get('/chat', function (req, res) {
 	res.render(__dirname + '/views/chat.html', { user: req.session.user });
 });
 
+function Message(nickname, message, timestamp) {
+	this.nickname = nickname;
+	this.message = message;
+	this.timestamp = timestamp;
+}
+
 io.sockets.on('connection', function (socket) {
 
-	socket.on('set nickname', function (name) {
-		socket.set('nickname', name, function () {
-			socket.emit('remove user', { name: name, id: socket.id });
-			socket.broadcast.emit('remove user', { name: name, id: socket.id });
-			socket.emit('add user', { name: name, id: socket.id });
-			socket.broadcast.emit('add user', { name: name, id: socket.id });
+	socket.on('set nickname', function (nickname) {
+		socket.set('nickname', nickname, function () {
+
+			//if exists
+
+			socket.emit('remove user', { nickname: nickname, id: socket.id });
+			socket.broadcast.emit('remove user', { nickname: nickname, id: socket.id });
+			socket.emit('add user', { nickname: nickname, id: socket.id });
+			socket.broadcast.emit('add user', { nickname: nickname, id: socket.id });
+
+			var m = new Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
+			socket.broadcast.emit('message', m);
+			save(m);
 		});
 	});
 
 	socket.on('message', function (message) {
-		socket.get('nickname', function (err, name) {
+		socket.get('nickname', function (err, nickname) {
 
-			var m = {
-				name: name,
-				message: message.value
-			};
-
-			db.collection('messages', function(err, collection) {
-				collection.insert(m, function(){});
-			});
-
-			socket.emit('chat', { user: name, value: message.value});
-			socket.broadcast.emit('chat', { user: name, value: message.value});
+			var m = new Message(nickname, message.value, new Date());
+			socket.emit('chat', m);
+			socket.broadcast.emit('chat', m);
+			save(m);
 		});
 	});
 
@@ -64,8 +70,8 @@ io.sockets.on('connection', function (socket) {
 			collection.find({}, function(err, cursor) {
 				cursor.each(function(err, rec) {
 					if(rec != null){ //not sure why this is null sometimes.
-						console.log('name: ' + rec.name, 'message' + rec.message);
-						socket.emit('chat', { user: rec.name, value: rec.message });
+						console.log('name: ' + rec.nickname, 'message' + rec.message);
+						socket.emit('chat', rec);
 					}
 				});
 			});
@@ -73,7 +79,7 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	socket.on('typing', function () {
-		socket.get('nickname', function (err, name) {
+		socket.get('nickname', function (err, nickname) {
 			socket.broadcast.emit('typing', { id: socket.id });
 		});
 	});
@@ -90,3 +96,9 @@ io.sockets.on('connection', function (socket) {
 });
 
 db.open(function() {});
+
+function save(message) {
+	db.collection('messages', function(err, collection) {
+		collection.insert(message, function(){});
+	});
+}
