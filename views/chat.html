@@ -36,8 +36,8 @@
 			});
 
 			$("#textentry").keyup(function(e) {
+				var textarea = $('textarea#textentry');
 				if (e.keyCode == 13) {
-					var textarea = $('textarea#textentry');
 					socket.emit('message', { value: textarea.val() });
 					textarea.val('');
 					$('html, body').animate({scrollTop: $(document).height()}, 'fast');
@@ -64,7 +64,7 @@
 				socket.emit('refresh');
 
 				socket.on('chat', function (data) {
-					$('#content').append('<div>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
+					$('#content').append('<div id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
 					if($("#autoscroll").text() == 'On') autoScroll();
 				});
 

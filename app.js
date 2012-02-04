@@ -44,15 +44,14 @@ io.sockets.on('connection', function (socket) {
 		socket.set('nickname', nickname, function () {
 
 			//if exists
-
 			socket.emit('remove user', { nickname: nickname, id: socket.id });
 			socket.broadcast.emit('remove user', { nickname: nickname, id: socket.id });
 			socket.emit('add user', { nickname: nickname, id: socket.id });
 			socket.broadcast.emit('add user', { nickname: nickname, id: socket.id });
 
 			var m = new Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
-			socket.broadcast.emit('message', m);
 			save(m);
+			socket.broadcast.emit('message', m);
 		});
 	});
 
@@ -60,19 +59,27 @@ io.sockets.on('connection', function (socket) {
 		socket.get('nickname', function (err, nickname) {
 
 			var m = new Message(nickname, message.value, new Date());
+			save(m);
 			socket.emit('chat', m);
 			socket.broadcast.emit('chat', m);
-			save(m);
 		});
 	});
 
-	socket.on('refresh', function () {
+	socket.on('refresh', function (id) {
+
+		var BSON = mongo.BSONPure;
 		db.collection('messages', function(err, collection) {
-			collection.find({}, function(err, cursor) {
-				cursor.each(function(err, rec) {
-					if (rec != null) { //not sure why this is null sometimes.
-						console.log('name: ' + rec.nickname, 'message' + rec.message);
-						socket.emit('chat', rec);
+			var query = null;
+			if (id) query = {'_id': {$gt: new BSON.ObjectID(id)}};
+			else query = {};
+			
+			collection.find(query, function(err, cursor) {
+				cursor.sort({timestamp: -1}).limit(100).toArray(function(err, records) {
+					for(var i in records.reverse()) {
+						if (records[i] != null) {
+							console.log('name: ' + records[i].nickname, 'message' + records[i].message);
+							socket.emit('chat', records[i]);
+						}
 					}
 				});
 			});
@@ -101,7 +108,7 @@ db.open(function() {
 
 function save(message) {
 	db.collection('messages', function(err, collection) {
-		collection.insert(message, function() {
+		collection.save(message, function() {
 		});
 	});
 }
