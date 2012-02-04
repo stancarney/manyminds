@@ -9,10 +9,11 @@ app.listen(8080);
 app.use(express.cookieParser());
 app.use(express.session({ secret: "keyboard cat" }));
 app.use(express.bodyParser());
+app.use("/public", express.static(__dirname + '/public'));
 
 app.set('view options', {
-    open: '{{',
-    close: '}}',
+	open: '{{',
+	close: '}}',
 	layout: false
 });
 
@@ -31,41 +32,70 @@ app.get('/chat', function (req, res) {
 	res.render(__dirname + '/views/chat.html', { user: req.session.user });
 });
 
+function Message(nickname, message, timestamp) {
+	this.nickname = nickname;
+	this.message = message;
+	this.timestamp = timestamp;
+}
+
 io.sockets.on('connection', function (socket) {
 
-	socket.on('set nickname', function (name) {
-		socket.set('nickname', name, function () {
-			socket.emit('remove user', { name: name, id: socket.id });
-			socket.broadcast.emit('remove user', { name: name, id: socket.id });
-			socket.emit('add user', { name: name, id: socket.id });
-			socket.broadcast.emit('add user', { name: name, id: socket.id });
+	socket.on('set nickname', function (nickname) {
+		socket.set('nickname', nickname, function () {
+
+			//if exists
+			socket.emit('remove user', { nickname: nickname, id: socket.id });
+			socket.broadcast.emit('remove user', { nickname: nickname, id: socket.id });
+			socket.emit('add user', { nickname: nickname, id: socket.id });
+			socket.broadcast.emit('add user', { nickname: nickname, id: socket.id });
+
+			var m = new Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
+			save(m);
+			socket.broadcast.emit('message', m);
 		});
 	});
 
 	socket.on('message', function (message) {
-		socket.get('nickname', function (err, name) {
+		socket.get('nickname', function (err, nickname) {
 
-			var m = {
-				name: name,
-				message: message.value
-			};
-
-			db.collection('messages', function(err, collection) {
-				collection.insert(m, function(){});
-			});
-
-			socket.emit('chat', { user: name, value: message.value});
-			socket.broadcast.emit('chat', { user: name, value: message.value});
+			var m = new Message(nickname, message.value, new Date());
+			save(m);
+			socket.emit('chat', m);
+			socket.broadcast.emit('chat', m);
 		});
 	});
 
-	socket.on('refresh', function () {
+	socket.on('scroll', function (id) {
+
+		var BSON = mongo.BSONPure;
 		db.collection('messages', function(err, collection) {
-			collection.find({}, function(err, cursor) {
-				cursor.each(function(err, rec) {
-					if(rec != null){ //not sure why this is null sometimes.
-						console.log('name: ' + rec.name, 'message' + rec.message);
-						socket.emit('chat', { user: rec.name, value: rec.message });
+
+		collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(20).toArray(function(err, records) {
+				for(var i in records) {
+					if (records[i] != null) {
+						console.log('name: ' + records[i].nickname, 'message' + records[i].message);
+						socket.emit('old', records[i]);
+					}
+				}
+			});
+		});
+	});
+
+	socket.on('refresh', function (id) {
+
+		var BSON = mongo.BSONPure;
+		db.collection('messages', function(err, collection) {
+			var query = null;
+			if (id) query = {'_id': {$gt: new BSON.ObjectID(id)}};
+			else query = {};
+			
+			collection.find(query, function(err, cursor) {
+				cursor.sort({timestamp: -1}).limit(20).toArray(function(err, records) {
+					for(var i in records.reverse()) {
+						if (records[i] != null) {
+							console.log('name: ' + records[i].nickname, 'message' + records[i].message);
+							socket.emit('chat', records[i]);
+						}
 					}
 				});
 			});
@@ -73,7 +103,7 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	socket.on('typing', function () {
-		socket.get('nickname', function (err, name) {
+		socket.get('nickname', function (err, nickname) {
 			socket.broadcast.emit('typing', { id: socket.id });
 		});
 	});
@@ -89,4 +119,12 @@ io.sockets.on('connection', function (socket) {
 	});
 });
 
-db.open(function() {});
+db.open(function() {
+});
+
+function save(message) {
+	db.collection('messages', function(err, collection) {
+		collection.save(message, function() {
+		});
+	});
+}
