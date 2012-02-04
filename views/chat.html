@@ -40,7 +40,7 @@
 				if (e.keyCode == 13) {
 					socket.emit('message', { value: textarea.val() });
 					textarea.val('');
-					$('html, body').animate({scrollTop: $(document).height()}, 'fast');
+					autoScroll();
 				} else {
 					if (!typing) {
 						typing = true;
@@ -64,8 +64,12 @@
 				socket.emit('refresh');
 
 				socket.on('chat', function (data) {
-					$('#content').append('<div id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
+					$('#content').append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
 					if($("#autoscroll").text() == 'On') autoScroll();
+				});
+
+				socket.on('old', function (data) {
+					$('#content').prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
 				});
 
 				socket.on('add user', function (data) {
@@ -82,8 +86,15 @@
 			}
 
 			function autoScroll() {
-				$('html, body').animate({scrollTop: $(document).height()}, 1);
+				$('#content').animate({scrollTop: $(document).height()}, 1);
 			}
+
+			$('#content').scroll(function() {
+				if ($('#content').scrollTop() == 0) {
+					socket.emit('scroll', $('div.message').first().attr('id'));
+					$('#content').scrollTop(1);
+				}
+			});
 		});
 
 	</script>
@@ -128,7 +139,7 @@
 </div>
 <div class="row">
 	<div class="span2">&nbsp;</div>
-	<div class="offset2" style="width:80%;" id="content"></div>
+	<div class="offset2" style="height:80%%;overflow:auto;" id="content"></div>
 </div>
 <div class="row" id="footer">
 	<div class="offset2" style="width:80%;">

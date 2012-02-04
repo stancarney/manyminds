@@ -65,6 +65,22 @@ io.sockets.on('connection', function (socket) {
 		});
 	});
 
+	socket.on('scroll', function (id) {
+
+		var BSON = mongo.BSONPure;
+		db.collection('messages', function(err, collection) {
+
+		collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(20).toArray(function(err, records) {
+				for(var i in records) {
+					if (records[i] != null) {
+						console.log('name: ' + records[i].nickname, 'message' + records[i].message);
+						socket.emit('old', records[i]);
+					}
+				}
+			});
+		});
+	});
+
 	socket.on('refresh', function (id) {
 
 		var BSON = mongo.BSONPure;
@@ -74,7 +90,7 @@ io.sockets.on('connection', function (socket) {
 			else query = {};
 			
 			collection.find(query, function(err, cursor) {
-				cursor.sort({timestamp: -1}).limit(100).toArray(function(err, records) {
+				cursor.sort({timestamp: -1}).limit(20).toArray(function(err, records) {
 					for(var i in records.reverse()) {
 						if (records[i] != null) {
 							console.log('name: ' + records[i].nickname, 'message' + records[i].message);
