@@ -56,13 +56,17 @@
 				socket.emit('set nickname', '{{= user }}');
 				socket.emit('refresh');
 
-				socket.on('chat', function (data) {
+				socket.on('new', function (data) {
 					$('#content').append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
 					if ($("#autoscroll").text() == 'On') autoScroll();
 				});
 
 				socket.on('old', function (data) {
 					$('#content').prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
+				});
+
+				socket.on('day', function (data) {
+					$('#content').prepend('<div class="day"><span class="day">' + new Date(data.timestamp).toLocaleDateString() + '</span></div>');
 				});
 
 				socket.on('add user', function (data) {
@@ -98,6 +102,21 @@
 
 		.typing {
 			color: #C43C35;
+		}
+
+		div.day {
+			height: 1px;
+			border-top: 1px solid #C43C35;
+			text-align: center;
+			position: relative;
+			color: #C43C35;
+		}
+
+		span.day {
+			position: relative;
+			top: -.7em;
+			background: white;
+			display: inline-block;
 		}
 	</style>
 </head>

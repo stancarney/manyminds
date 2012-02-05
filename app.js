@@ -60,8 +60,8 @@ io.sockets.on('connection', function (socket) {
 
 			var m = new Message(nickname, message.value, new Date());
 			save(m);
-			socket.emit('chat', m);
-			socket.broadcast.emit('chat', m);
+			socket.emit('new', m);
+			socket.broadcast.emit('new', m);
 		});
 	});
 
@@ -70,11 +70,16 @@ io.sockets.on('connection', function (socket) {
 		var BSON = mongo.BSONPure;
 		db.collection('messages', function(err, collection) {
 
-		collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(20).toArray(function(err, records) {
-				for(var i in records) {
+			collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(50).toArray(function(err, records) {
+				for (var i in records) {
 					if (records[i] != null) {
-						console.log('name: ' + records[i].nickname, 'message' + records[i].message);
 						socket.emit('old', records[i]);
+
+						//emit day break.
+						var next = parseInt(i) + 1;
+						if (next < records.length && utcDay(records[i].timestamp) > utcDay(records[next].timestamp)) {
+							socket.emit('day', {timestamp: records[i].timestamp});
+						}
 					}
 				}
 			});
@@ -88,13 +93,13 @@ io.sockets.on('connection', function (socket) {
 			var query = null;
 			if (id) query = {'_id': {$gt: new BSON.ObjectID(id)}};
 			else query = {};
-			
+
 			collection.find(query, function(err, cursor) {
 				cursor.sort({timestamp: -1}).limit(100).toArray(function(err, records) {
-					for(var i in records.reverse()) {
+					for (var i in records.reverse()) {
 						if (records[i] != null) {
 							console.log('name: ' + records[i].nickname, 'message' + records[i].message);
-							socket.emit('chat', records[i]);
+							socket.emit('new', records[i]);
 						}
 					}
 				});
@@ -127,4 +132,8 @@ function save(message) {
 		collection.save(message, function() {
 		});
 	});
+}
+
+function utcDay(timestamp) {
+	return parseInt(timestamp.getTime() / 100000000);
 }
