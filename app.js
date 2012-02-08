@@ -70,7 +70,7 @@ io.sockets.on('connection', function (socket) {
 		var BSON = mongo.BSONPure;
 		db.collection('messages', function(err, collection) {
 
-			collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(50).toArray(function(err, records) {
+			collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(100).toArray(function(err, records) {
 				for (var i in records) {
 					if (records[i] != null) {
 						socket.emit('old', records[i]);
@@ -82,6 +82,8 @@ io.sockets.on('connection', function (socket) {
 						}
 					}
 				}
+				
+				socket.emit('complete');
 			});
 		});
 	});
@@ -128,10 +130,14 @@ db.open(function() {
 });
 
 function save(message) {
-	db.collection('messages', function(err, collection) {
-		collection.save(message, function() {
+	try{
+		db.collection('messages', function(err, collection) {
+			collection.save(message, function() {
+			});
 		});
-	});
+	} catch(e) {
+		console.log('Could not save message.' + e);
+	}
 }
 
 function utcDay(timestamp) {
