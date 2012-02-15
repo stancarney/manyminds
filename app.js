@@ -1,15 +1,38 @@
 var express = require('express')
+		, MemoryStore = express.session.MemoryStore
+		, Session = require('connect').middleware.session.Session
 		, app = express.createServer()
+		, sessionStore = new MemoryStore()
 		, io = require('socket.io').listen(app)
 		, mongo = require('mongodb')
-		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {});
+		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {})
+		, parseCookie = require('connect').utils.parseCookie
+		, urlParser = require('url');
 
-app.listen(8080);
+var authCheck = function (req, res, next) {
+	url = req.urlp = urlParser.parse(req.url, true);
 
-app.use(express.cookieParser());
-app.use(express.session({ secret: "keyboard cat" }));
-app.use(express.bodyParser());
-app.use("/public", express.static(__dirname + '/public'));
+	if (req.session && req.session.auth == true || url.pathname == "/") {
+		next();
+		return;
+	}
+
+	if (url.pathname == "/chat") {
+		res.writeHead(403);
+		res.end('Sorry you are unauthorized.\n\nFor a login use: /login?name=max&pwd=herewego');
+		return;
+	}
+
+	next();
+}
+
+app.configure(function() {
+	app.use(express.cookieParser());
+	app.use(express.session({store: sessionStore , secret: 'secret' , key: 'express.sid'}));
+	app.use(express.bodyParser());
+	app.use("/public", express.static(__dirname + '/public'));
+	app.use(authCheck);
+});
 
 app.set('view options', {
 	open: '{{',
@@ -19,13 +42,21 @@ app.set('view options', {
 
 app.register('.html', require('ejs'));
 
+app.listen(8080);
+
 app.get('/', function (req, res) {
 	res.sendfile(__dirname + '/views/index.html');
 });
 
-app.post('/chat', function (req, res) {
+app.post('/login', function (req, res) {
 	req.session.user = req.body.nickname;
+	req.session.auth = true;
 	res.redirect('/chat')
+});
+
+app.get('/logout', function (req, res) {
+	req.session.destroy();
+	res.redirect('/')
 });
 
 app.get('/chat', function (req, res) {
@@ -38,7 +69,41 @@ function Message(nickname, message, timestamp) {
 	this.timestamp = timestamp;
 }
 
+io.set('authorization', function (data, accept) {
+	if (data.headers.cookie) {
+		data.cookie = parseCookie(data.headers.cookie);
+		data.sessionID = data.cookie['express.sid'];
+
+		data.sessionStore = sessionStore;
+		sessionStore.get(data.sessionID, function (err, session) {
+			if (err || !session) {
+				accept('Error', false);
+			} else {
+
+				data.session = new Session(data, session);
+				accept(null, true);
+			}
+		});
+	} else {
+		return accept('No cookie transmitted.', false);
+	}
+});
+
 io.sockets.on('connection', function (socket) {
+
+	var hs = socket.handshake;
+	console.log('A socket with sessionID ' + hs.sessionID + ' connected!');
+
+	var intervalID = setInterval(function () {
+		hs.session.reload(function () {
+			hs.session.touch().save();
+		});
+	}, 60 * 1000);
+
+	socket.on('disconnect', function () {
+		console.log('A socket with sessionID ' + hs.sessionID + ' disconnected!');
+		clearInterval(intervalID);
+	});
 
 	socket.on('set nickname', function (nickname) {
 		socket.set('nickname', nickname, function () {
@@ -82,7 +147,7 @@ io.sockets.on('connection', function (socket) {
 						}
 					}
 				}
-				
+
 				socket.emit('complete');
 			});
 		});
@@ -114,23 +179,13 @@ io.sockets.on('connection', function (socket) {
 			socket.broadcast.emit('typing', { id: socket.id });
 		});
 	});
-
-	socket.on('adduser', function (user) {
-		console.log('Using is typing a message');
-		socket.emit('ready', {});
-	});
-
-	socket.on('deluser', function (user) {
-		console.log('Using is typing a message');
-		socket.emit('ready', {});
-	});
 });
 
 db.open(function() {
 });
 
 function save(message) {
-	try{
+	try {
 		db.collection('messages', function(err, collection) {
 			collection.save(message, function() {
 			});
