@@ -7,7 +7,10 @@ var express = require('express')
 		, mongo = require('mongodb')
 		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {})
 		, parseCookie = require('connect').utils.parseCookie
-		, urlParser = require('url');
+		, urlParser = require('url')
+		, commands = require('./commands.js')
+		, utils = require('./utils.js')()
+		, Message = require('./message.js').Message;
 
 var authCheck = function (req, res, next) {
 	url = req.urlp = urlParser.parse(req.url, true);
@@ -62,12 +65,6 @@ app.get('/logout', function (req, res) {
 app.get('/chat', function (req, res) {
 	res.render(__dirname + '/views/chat.html', { user: req.session.user });
 });
-
-function Message(nickname, message, timestamp) {
-	this.nickname = nickname;
-	this.message = message;
-	this.timestamp = timestamp;
-}
 
 io.set('authorization', function (data, accept) {
 	if (data.headers.cookie) {
@@ -124,9 +121,12 @@ io.sockets.on('connection', function (socket) {
 		socket.get('nickname', function (err, nickname) {
 
 			var m = new Message(nickname, message.value, new Date());
-			save(m);
-			socket.emit('new', m);
-			socket.broadcast.emit('new', m);
+
+			if(!commands(m, socket)) {
+				save(m);
+				socket.emit('new', m);
+				socket.broadcast.emit('new', m);
+			}
 		});
 	});
 

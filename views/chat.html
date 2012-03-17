@@ -47,13 +47,13 @@
 				socket.emit('refresh');
 
 				socket.on('new', function (data) {
-					$('#content').append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
+					$('#content').append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
 					if (scroll) autoScroll();
 				});
 
 				socket.on('old', function (data) {
 					scrolling = true;
-					$('#content').prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.message + '</div>');
+					$('#content').prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
 					$('#content').scrollTop(1);
 				});
 				
