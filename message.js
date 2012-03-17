@@ -10,3 +10,14 @@ exports.getCommand = function (message) {
 		return match[0];
 	}
 }
+
+exports.save = function (db, message) {
+	try {
+		db.collection('messages', function(err, collection) {
+			collection.save(message, function() {
+			});
+		});
+	} catch(e) {
+		console.log('Could not save message.' + e);
+	}
+}

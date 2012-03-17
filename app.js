@@ -10,7 +10,7 @@ var express = require('express')
 		, urlParser = require('url')
 		, commands = require('./commands.js')
 		, utils = require('./utils.js')()
-		, Message = require('./message.js').Message;
+		, m = require('./message.js');
 
 var authCheck = function (req, res, next) {
 	url = req.urlp = urlParser.parse(req.url, true);
@@ -111,8 +111,8 @@ io.sockets.on('connection', function (socket) {
 			socket.emit('add user', { nickname: nickname, id: socket.id });
 			socket.broadcast.emit('add user', { nickname: nickname, id: socket.id });
 
-			var m = new Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
-			save(m);
+			var msg = new m.Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
+			m.save(msg);
 			socket.broadcast.emit('message', m);
 		});
 	});
@@ -120,12 +120,12 @@ io.sockets.on('connection', function (socket) {
 	socket.on('message', function (message) {
 		socket.get('nickname', function (err, nickname) {
 
-			var m = new Message(nickname, message.value, new Date());
+			var msg = new m.Message(nickname, message.value, new Date());
 
-			if(!commands(m, socket)) {
-				save(m);
-				socket.emit('new', m);
-				socket.broadcast.emit('new', m);
+			if(!commands(msg, socket, db)) {
+				m.save(msg);
+				socket.emit('new', msg);
+				socket.broadcast.emit('new', msg);
 			}
 		});
 	});
@@ -183,17 +183,6 @@ io.sockets.on('connection', function (socket) {
 
 db.open(function() {
 });
-
-function save(message) {
-	try {
-		db.collection('messages', function(err, collection) {
-			collection.save(message, function() {
-			});
-		});
-	} catch(e) {
-		console.log('Could not save message.' + e);
-	}
-}
 
 function utcDay(timestamp) {
 	return parseInt(timestamp.getTime() / 100000000);

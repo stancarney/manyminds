@@ -1,6 +1,5 @@
-module.exports = function(message, socket) {
-	var m = require('./message.js')
-			, Message = require('./message.js').Message;
+module.exports = function(message, socket, db) {
+	var m = require('./message.js');
 
 	if (m.getCommand(message)) {
 		var text = null;
@@ -10,7 +9,7 @@ module.exports = function(message, socket) {
 				text = "<strong>/help</strong><br/>" +
 						"<strong>/adduser</strong> username email<br/>";
 		}
-		socket.emit('new', new Message('', text, new Date()));
+		socket.emit('new', new m.Message('', text, new Date()));
 		return true;
 	} else {
 		return false;
