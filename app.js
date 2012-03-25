@@ -8,9 +8,8 @@ var express = require('express')
 		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {})
 		, parseCookie = require('connect').utils.parseCookie
 		, urlParser = require('url')
-		, commands = require('./commands.js')
 		, utils = require('./utils.js')()
-		, m = require('./message.js');
+		, c = require('./channel.js');
 
 var authCheck = function (req, res, next) {
 	url = req.urlp = urlParser.parse(req.url, true);
@@ -52,7 +51,10 @@ app.get('/', function (req, res) {
 });
 
 app.post('/login', function (req, res) {
-	req.session.user = req.body.nickname;
+	req.session.user = req.body.username;
+
+	//send to channel
+
 	req.session.auth = true;
 	res.redirect('/chat')
 });
@@ -103,87 +105,25 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	socket.on('set nickname', function (nickname) {
-		socket.set('nickname', nickname, function () {
-
-			//if exists
-			socket.emit('remove user', { nickname: nickname, id: socket.id });
-			socket.broadcast.emit('remove user', { nickname: nickname, id: socket.id });
-			socket.emit('add user', { nickname: nickname, id: socket.id });
-			socket.broadcast.emit('add user', { nickname: nickname, id: socket.id });
-
-			var msg = new m.Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
-			m.save(msg);
-			socket.broadcast.emit('message', m);
-		});
+		c.setNickName('default', nickname, socket, db);
 	});
 
 	socket.on('message', function (message) {
-		socket.get('nickname', function (err, nickname) {
-
-			var msg = new m.Message(nickname, message.value, new Date());
-
-			if(!commands(msg, socket, db)) {
-				m.save(msg);
-				socket.emit('new', msg);
-				socket.broadcast.emit('new', msg);
-			}
-		});
+		c.message('default', message, socket, db);
 	});
 
 	socket.on('scroll', function (id) {
-
-		var BSON = mongo.BSONPure;
-		db.collection('messages', function(err, collection) {
-
-			collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(100).toArray(function(err, records) {
-				for (var i in records) {
-					if (records[i] != null) {
-						socket.emit('old', records[i]);
-
-						//emit day break.
-						var next = parseInt(i) + 1;
-						if (next < records.length && utcDay(records[i].timestamp) > utcDay(records[next].timestamp)) {
-							socket.emit('day', {timestamp: records[i].timestamp});
-						}
-					}
-				}
-
-				socket.emit('complete');
-			});
-		});
+		c.scroll('default', id, socket, db);
 	});
 
 	socket.on('refresh', function (id) {
-
-		var BSON = mongo.BSONPure;
-		db.collection('messages', function(err, collection) {
-			var query = null;
-			if (id) query = {'_id': {$gt: new BSON.ObjectID(id)}};
-			else query = {};
-
-			collection.find(query, function(err, cursor) {
-				cursor.sort({timestamp: -1}).limit(100).toArray(function(err, records) {
-					for (var i in records.reverse()) {
-						if (records[i] != null) {
-							console.log('name: ' + records[i].nickname, 'message' + records[i].message);
-							socket.emit('new', records[i]);
-						}
-					}
-				});
-			});
-		});
+		c.refresh('default', id, socket, db);
 	});
 
 	socket.on('typing', function () {
-		socket.get('nickname', function (err, nickname) {
-			socket.broadcast.emit('typing', { id: socket.id });
-		});
+		c.typing('default', socket, db);
 	});
 });
 
 db.open(function() {
 });
-
-function utcDay(timestamp) {
-	return parseInt(timestamp.getTime() / 100000000);
-}

@@ -11,7 +11,7 @@ exports.getCommand = function (message) {
 	}
 }
 
-exports.save = function (db, message) {
+exports.save = function (message, db) {
 	try {
 		db.collection('messages', function(err, collection) {
 			collection.save(message, function() {
