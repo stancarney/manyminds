@@ -1,48 +1,36 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-	<link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
-
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css">
 </head>
 <body>
-<div class="container">
-	<div class="row">
-		<div class="span12">
-			<form action="/login" method="POST">
-				<fieldset>
-					<legend>Connect</legend>
-					<div class="clearfix">
-						<label for="username">Username</label>
-						<div class="input">
-							<input class="xlarge" id="username" name="username" size="30" type="text">
+	<div class="container">
+		<div class="row">
+			<div class="offset4">
+				<form class="well span3" action="/login" method="POST">
+					<fieldset>
+						<div class="span3"><h1>Many Minds</h1></div>
+						<div>
+							<input class="span3" id="username" name="username" type="text" placeholder="username">
 						</div>
-					</div>
-					<div class="clearfix">
-						<label for="password">Password</label>
-						<div class="input">
-							<input class="xlarge" id="password" name="password" size="30" type="text">
+						<div>
+							<input class="span3" id="password" name="password" type="text" placeholder="password">
 						</div>
-					</div>
-					<div class="clearfix">
-						<label for="nickname">Nickname</label>
-						<div class="input">
-							<input class="xlarge" id="nickname" name="nickname" size="30" type="text">
+						<div>
+							<input class="span3" id="nickname" name="nickname" type="text" placeholder="nickname">
 						</div>
-					</div>
-					<div class="clearfix">
-						<label for="channel">Channel</label>
-						<div class="input">
-							<input class="xlarge" id="channel" name="channel" size="30" type="text">
+						<div>
+							<input class="span3" id="channel" name="channel" type="text" placeholder="channel">
 						</div>
-					</div>
-					<div class="actions">
-						<input type="submit" class="btn large primary" value="GO!"/>
-					</div>
-				</fieldset>
-			</form>
+						<div>
+							<input class="span3 btn btn-large btn-primary" type="submit" value="GO!"/>
+						</div>
+					</fieldset>
+				</form>
+			</div>
 		</div>
 	</div>
-</div>
-
 </body>
 </html>

@@ -1,8 +1,10 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
 	<script src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css">
 	<script>
 		$(document).ready(function() {
 			var socket;
@@ -66,7 +68,7 @@
 				});
 
 				socket.on('add user', function (data) {
-					$('#users').append('<li id="user_' + data.id + '">' + data.nickname + '</li>');
+					$('#users').append('<li style="list-style-type:none" id="user_' + data.id + '"><i class="icon-user"></i> ' + data.nickname + '</li>');
 				});
 
 				socket.on('remove user', function (data) {
@@ -100,10 +102,16 @@
 
 	</script>
 	<style type="text/css">
-		ul {
-			list-style-image: url("/images/arrow.gif")
+		html,body {
+			padding: 0px;
+			margin: 0px;
+			height:100%;
 		}
-
+		
+		.height100 {
+			height:100%;
+		}
+		
 		.typing {
 			color: #C43C35;
 		}
@@ -125,37 +133,35 @@
 	</style>
 </head>
 <body>
-
-<div id="main" class="row" style="height: 90%;margin-top: 5px;margin-bottom: 5px;padding-right:5px;">
-	
-	<div id="userslist" class="span2">
-		<h3>Users</h3>
-		<ul id="users"></ul>
-		<div class="span2">
-			<h3>Settings</h3>
-
-			<form class="form-stacked" onsubmit="return false;">
-				<fieldset>
-
-					<div class="clearfix">
+<div class="container-fluid height100">
+	<div class="row" id="tabs">
+		<ul class="nav nav-tabs">
+			<li><a href="#home" data-toggle="tab">Channel1</a></li>
+			<li><a href="#profile" data-toggle="tab">Channel2</a></li>
+			<li><a href="#messages" data-toggle="tab">Channel3</a></li>
+			<li><a href="#settings" data-toggle="tab">Channel4</a></li>
+		</ul>
+	</div>
+	<div class="row" style="height: 90%;">
+		<div class="span2" style="width:140px;">
+			<div id="userslist" class="well">
+				<h3>Users</h3>
+				<ul id="users"></ul>
+				<h3>Settings</h3>
+				<form class="form-stacked" onsubmit="return false;">
+					<fieldset>
 						<label for="nickname">Nickname</label>
-						<div class="input">
-							<input type="text" id="nickname" name="nickname" value="{{= user }}" class="span2"/>
-						</div>
-					</div>
-
-				</fieldset>
-			</form>
+						<input class="input-small" type="text" id="nickname" name="nickname" value="{{= user }}"/>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+		
+		<div class="offset2" style="height:100%;">
+			<div class="height100" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
+			<textarea id="textentry" style="width:100%;padding: 0px;"></textarea>
 		</div>
 	</div>
-	<div class="offset2" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
 </div>
-
-<div class="row" id="footer" style="height: 9%;padding-right:5px;">
-	<div class="offset2">
-		<textarea id="textentry" class="xxlarge" style="width:100%;height:100%;"></textarea>
-	</div>
-</div>
-
 </body>
 </html>
