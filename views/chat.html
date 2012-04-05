@@ -12,31 +12,12 @@
 			var connected = false;
 			var scroll = true;
 			var scrolling = false;
-
-			autoScroll();
+			
+			//autoScroll();
 			connect();
-
-			$("#nickname").keyup(function(e) {
-				if (e.keyCode == 13) socket.emit('set nickname', $('#nickname').val());
-			});
-
-			$("#textentry").keyup(function(e) {
-				var textarea = $('textarea#textentry');
-				if (e.keyCode == 13) {
-					socket.emit('message', { value: textarea.val() });
-					textarea.val('');
-					autoScroll();
-				} else {
-					if (!typing) {
-						typing = true;
-						socket.emit('typing');
-					}
-
-					setTimeout(function() {
-						typing = false;
-					}, 2000);
-				}
-			});
+			
+			socket.emit('set nickname', '{{= user }}');
+			socket.emit('refresh', '{{= channel }}');
 
 			setInterval(function() {
 				$("ul#users>li.typing").removeClass("typing");
@@ -45,18 +26,62 @@
 			function connect() {
 				socket = io.connect('http://localhost:8080');
 
-				socket.emit('set nickname', '{{= user }}');
-				socket.emit('refresh');
-
+				socket.on('join', function (data) {
+					var newChannel = $('#channel').clone();
+					newChannel.css('display', '');
+					newChannel.attr('id', data.channel);
+					$('#channels').append(newChannel);
+					
+					$('#tabs').append('<li class="active"><a href="#'+ data.channel +'" data-toggle="tab">' + data.channel + '</a></li>');
+					$('#' + data.channel).tab('show');
+					
+					$(nicknameId(data.channel)).live("keyup", function(e) {
+						if (e.keyCode == 13) socket.emit('set nickname', $(nicknameId(data.channel)).val());
+					});
+		
+					$(textentryId(data.channel)).live("keyup", function(e) {
+						var textarea = $(textentryId(data.channel));
+						if (e.keyCode == 13) {
+							socket.emit('message', { channel: data.channel, value: textarea.val() });
+							textarea.val('');
+							//autoScroll();
+						} else {
+							if (!typing) {
+								typing = true;
+								socket.emit('typing');
+							}
+		
+							setTimeout(function() {
+								typing = false;
+							}, 2000);
+						}
+					});
+					
+					$(contentId(data.channel)).live("scroll", function() {
+						if(!scrolling){
+							if ($(contentId(data.channel)).scrollTop() == 0) {
+								socket.emit('scroll', $('div.message').first().attr('id'));
+							}
+							
+							if ($(contentId(data.channel)).scrollTop() + $(contentId(data.channel)).height() == $(contentId(data.channel))[0].scrollHeight) {
+								scroll = true;
+								autoScroll(contentId(data.channel));
+							} else {
+								scroll = false;
+							}
+						}
+					});
+				});
+				
 				socket.on('new', function (data) {
-					$('#content').append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
-					if (scroll) autoScroll();
+					$(contentId(data.channel)).append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
+					if (scroll) autoScroll(contentId(data.channel));
 				});
 
 				socket.on('old', function (data) {
 					scrolling = true;
-					$('#content').prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
-					$('#content').scrollTop(1);
+					$(contentId(data.channel)).prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
+					$(contentId(data.channel)).scrollTop(1);
 				});
 				
 				socket.on('complete', function (data) {
@@ -64,7 +89,7 @@
 				});
 
 				socket.on('day', function (data) {
-					$('#content').prepend('<div class="day"><span class="day">' + new Date(data.timestamp).toLocaleDateString() + '</span></div>');
+					$(contentId(data.channel)).prepend('<div class="day"><span class="day">' + new Date(data.timestamp).toLocaleDateString() + '</span></div>');
 				});
 
 				socket.on('add user', function (data) {
@@ -80,24 +105,15 @@
 				});
 			}
 
-			function autoScroll() {
-				$('#content').animate({scrollTop: $('#content')[0].scrollHeight}, 0);
+			function autoScroll(id) {
+				$(id).animate({scrollTop: $(contentId(id)).scrollHeight}, 0);
 			}
-
-			$('#content').scroll(function() {
-				if(!scrolling){
-					if ($('#content').scrollTop() == 0) {
-						socket.emit('scroll', $('div.message').first().attr('id'));
-					}
-					
-					if ($('#content').scrollTop() + $('#content').height() == $('#content')[0].scrollHeight) {
-						scroll = true;
-						autoScroll();
-					} else {
-						scroll = false;
-					}
-				}
-			});
+			
+			function contentId(channel) { return '#' + channel + ' #content'; }
+			
+			function textentryId(channel) { return '#' + channel + ' #textentry'; }
+			
+			function nicknameId(channel) { return '#' + channel + ' #nickname'; }
 		});
 
 	</script>
@@ -133,15 +149,7 @@
 	</style>
 </head>
 <body>
-<div class="container-fluid height100">
-	<div class="row" id="tabs">
-		<ul class="nav nav-tabs">
-			<li><a href="#home" data-toggle="tab">Channel1</a></li>
-			<li><a href="#profile" data-toggle="tab">Channel2</a></li>
-			<li><a href="#messages" data-toggle="tab">Channel3</a></li>
-			<li><a href="#settings" data-toggle="tab">Channel4</a></li>
-		</ul>
-	</div>
+<div class="tab-pane height100" style="display:none;" id="channel">
 	<div class="row" style="height: 90%;">
 		<div class="span2" style="width:140px;">
 			<div id="userslist" class="well">
@@ -156,12 +164,52 @@
 				</form>
 			</div>
 		</div>
-		
 		<div class="offset2" style="height:100%;">
 			<div class="height100" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
 			<textarea id="textentry" style="width:100%;padding: 0px;"></textarea>
 		</div>
 	</div>
 </div>
+
+<div class="container-fluid height100">
+	<div class="row">
+		<ul class="nav nav-tabs" id="tabs">
+		</ul>
+	</div>
+	<div id="channels"> </div>
+</div>
 </body>
 </html>
+		
+		<!--
+		<div id="main" class="row" style="height: 90%;margin-top: 5px;margin-bottom: 5px;padding-right:5px;">
+	
+	<div id="userslist" class="span2">
+		<h3>Users</h3>
+		<ul id="users"></ul>
+		<div class="span2">
+			<h3>Settings</h3>
+
+			<form class="form-stacked" onsubmit="return false;">
+				<fieldset>
+
+					<div class="clearfix">
+						<label for="nickname">Nickname</label>
+						<div class="input">
+							<input type="text" id="nickname" name="nickname" value="{{= user }}" class="span2"/>
+						</div>
+					</div>
+
+				</fieldset>
+			</form>
+		</div>
+	</div>
+	<div class="offset2" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
+</div>
+
+<div class="row" id="footer" style="height: 9%;padding-right:5px;">
+	<div class="offset2">
+		<textarea id="textentry" class="xxlarge" style="width:100%;height:100%;"></textarea>
+	</div>
+</div>
+		-->

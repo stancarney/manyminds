@@ -11,7 +11,7 @@ exports.join = function(channel, socket, db) {
 exports.message = function(channel, message, socket, db) {
 	socket.get('nickname', function (err, nickname) {
 
-		var msg = new m.Message(nickname, message.value, new Date());
+		var msg = new m.Message(channel, nickname, message, new Date());
 
 		if (!commands(msg, socket, db)) {
 			m.save(msg, db);
@@ -25,7 +25,7 @@ exports.scroll = function(channel, id, socket, db) {
 	var BSON = mongo.BSONPure;
 	db.collection('messages', function(err, collection) {
 
-		collection.find({'_id': {$lt: new BSON.ObjectID(id)}}).sort({_id: -1}).limit(100).toArray(function(err, records) {
+		collection.find({'_id': {$lt: new BSON.ObjectID(id)}, 'channel': channel}).sort({_id: -1}).limit(100).toArray(function(err, records) {
 			for (var i in records) {
 				if (records[i] != null) {
 					socket.emit('old', records[i]);
@@ -43,22 +43,17 @@ exports.scroll = function(channel, id, socket, db) {
 	});
 };
 
-exports.refresh = function(channel, id, socket, db) {
+exports.refresh = function(channel, socket, express, db) {
 	var BSON = mongo.BSONPure;
 	db.collection('messages', function(err, collection) {
-		var query = null;
-		if (id) query = {'_id': {$gt: new BSON.ObjectID(id)}};
-		else query = {};
 
-		collection.find(query, function(err, cursor) {
-			cursor.sort({timestamp: -1}).limit(100).toArray(function(err, records) {
-				for (var i in records.reverse()) {
-					if (records[i] != null) {
-						console.log('name: ' + records[i].nickname, 'message' + records[i].message);
-						socket.emit('new', records[i]);
-					}
+		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
+			for (var i in records.reverse()) {
+				if (records[i] != null) {
+					console.log('name: ' + records[i].nickname, 'message' + records[i].message);
+					socket.emit('new', records[i]);
 				}
-			});
+			}
 		});
 	});
 };

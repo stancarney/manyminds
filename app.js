@@ -56,7 +56,7 @@ app.post('/login', function (req, res) {
 	//send to channel
 
 	req.session.auth = true;
-	res.redirect('/chat')
+	res.redirect('/chat/' + req.body.channel)
 });
 
 app.get('/logout', function (req, res) {
@@ -64,8 +64,8 @@ app.get('/logout', function (req, res) {
 	res.redirect('/')
 });
 
-app.get('/chat', function (req, res) {
-	res.render(__dirname + '/views/chat.html', { user: req.session.user });
+app.get('/chat/:channel', function (req, res) {
+	res.render(__dirname + '/views/chat.html', { user: req.session.user, channel: [req.params.channel] });
 });
 
 io.set('authorization', function (data, accept) {
@@ -109,15 +109,16 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	socket.on('message', function (message) {
-		c.message('default', message, socket, db);
+		c.message(message.channel, message.value, socket, db);
 	});
 
-	socket.on('scroll', function (id) {
-		c.scroll('default', id, socket, db);
+	socket.on('scroll', function (channel, id) {
+		c.scroll(channel, id, socket, db);
 	});
 
-	socket.on('refresh', function (id) {
-		c.refresh('default', id, socket, db);
+	socket.on('refresh', function (channel) {
+		socket.emit('join', {channel: channel});
+		c.refresh(channel, socket, express, db);
 	});
 
 	socket.on('typing', function () {
