@@ -50,7 +50,7 @@ exports.refresh = function(channel, socket, express, db) {
 		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
 			for (var i in records.reverse()) {
 				if (records[i] != null) {
-					console.log('name: ' + records[i].nickname, 'message' + records[i].message);
+					console.log('channel: ' + records[i].channel, 'name: ' + records[i].nickname, 'message' + records[i].message);
 					socket.emit('new', records[i]);
 				}
 			}
