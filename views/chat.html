@@ -3,7 +3,8 @@
 <head>
 	<script src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
+	<script type="text/javascript"
+	        src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
 	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-tab.js"></script>
 	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css">
 	<script>
@@ -13,12 +14,27 @@
 			var connected = false;
 			var scroll = true;
 			var scrolling = false;
-			
+
 			//autoScroll();
 			connect();
+
+			
+			//TODO:Stan I need to parse the channel names out of the query string to send back to the server.
+			function parse() {
+				var nvpair = {};
+				var qs = window.location.search.replace('?', '');
+				var pairs = qs.split('&');
+				$.each(pairs, function(i, v) {
+					var pair = v.split('=');
+					nvpair[pair[0]] = nvpair[pair[0]] ? new Array() : nvpair[pair[0]];   
+					nvpair[pair[0]] = new Array();
+					nvpair[pair[0]] = pair[1];
+				});
+				return nvpair;	}
+			});
 			
 			socket.emit('set nickname', '{{= user }}');
-			socket.emit('refresh', '{{= channel }}');
+			socket.emit('refresh', jQuery.parseQuerystring()['c']);
 
 			setInterval(function() {
 				$("ul#users>li.typing").removeClass("typing");
@@ -32,14 +48,14 @@
 					newChannel.css('display', '');
 					newChannel.attr('id', data.channel);
 					$('#channels').append(newChannel);
-					
-					$('#tabs').append('<li><a href="#'+ data.channel +'" data-toggle="pill">' + data.channel + '</a></li>');
+
+					$('#tabs').append('<li><a href="#' + data.channel + '" data-toggle="pill">' + data.channel + '</a></li>');
 					$('#channels #' + data.channel).tab('show');
-					
+
 					$(nicknameId(data.channel)).live("keyup", function(e) {
 						if (e.keyCode == 13) socket.emit('set nickname', $(nicknameId(data.channel)).val());
 					});
-		
+
 					$(textentryId(data.channel)).live("keyup", function(e) {
 						var textarea = $(textentryId(data.channel));
 						if (e.keyCode == 13) {
@@ -51,19 +67,19 @@
 								typing = true;
 								socket.emit('typing');
 							}
-		
+
 							setTimeout(function() {
 								typing = false;
 							}, 2000);
 						}
 					});
-					
+
 					$(contentId(data.channel)).live("scroll", function() {
-						if(!scrolling){
+						if (!scrolling) {
 							if ($(contentId(data.channel)).scrollTop() == 0) {
 								socket.emit('scroll', $('div.message').first().attr('id'));
 							}
-							
+
 							if ($(contentId(data.channel)).scrollTop() + $(contentId(data.channel)).height() == $(contentId(data.channel))[0].scrollHeight) {
 								scroll = true;
 								autoScroll(contentId(data.channel));
@@ -73,7 +89,7 @@
 						}
 					});
 				});
-				
+
 				socket.on('new', function (data) {
 					$(contentId(data.channel)).append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
 					if (scroll) autoScroll(contentId(data.channel));
@@ -84,7 +100,7 @@
 					$(contentId(data.channel)).prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
 					$(contentId(data.channel)).scrollTop(1);
 				});
-				
+
 				socket.on('complete', function (data) {
 					scrolling = false;
 				});
@@ -109,26 +125,32 @@
 			function autoScroll(id) {
 				$(id).animate({scrollTop: $(contentId(id)).scrollHeight}, 0);
 			}
-			
-			function contentId(channel) { return '#' + channel + ' #content'; }
-			
-			function textentryId(channel) { return '#' + channel + ' #textentry'; }
-			
-			function nicknameId(channel) { return '#' + channel + ' #nickname'; }
+
+			function contentId(channel) {
+				return '#' + channel + ' #content';
+			}
+
+			function textentryId(channel) {
+				return '#' + channel + ' #textentry';
+			}
+
+			function nicknameId(channel) {
+				return '#' + channel + ' #nickname';
+			}
 		});
 
 	</script>
 	<style type="text/css">
-		html,body {
+		html, body {
 			padding: 0px;
 			margin: 0px;
-			height:100%;
+			height: 100%;
 		}
-		
+
 		.height100 {
-			height:100%;
+			height: 100%;
 		}
-		
+
 		.typing {
 			color: #C43C35;
 		}
@@ -157,6 +179,7 @@
 				<h3>Users</h3>
 				<ul id="users"></ul>
 				<h3>Settings</h3>
+
 				<form class="form-stacked" onsubmit="return false;">
 					<fieldset>
 						<label for="nickname">Nickname</label>
@@ -166,7 +189,9 @@
 			</div>
 		</div>
 		<div class="offset2" style="height:100%;">
-			<div class="height100" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
+			<div class="height100"
+			     style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;"
+			     id="content"></div>
 			<textarea id="textentry" style="width:100%;padding: 0px;"></textarea>
 		</div>
 	</div>
@@ -177,40 +202,40 @@
 		<ul class="nav nav-tabs" id="tabs">
 		</ul>
 	</div>
-	<div id="channels" class="tab-content"> </div>
+	<div id="channels" class="tab-content"></div>
 </div>
 </body>
 </html>
-		
-		<!--
-		<div id="main" class="row" style="height: 90%;margin-top: 5px;margin-bottom: 5px;padding-right:5px;">
-	
-	<div id="userslist" class="span2">
-		<h3>Users</h3>
-		<ul id="users"></ul>
-		<div class="span2">
-			<h3>Settings</h3>
 
-			<form class="form-stacked" onsubmit="return false;">
-				<fieldset>
+<!--
+	  <div id="main" class="row" style="height: 90%;margin-top: 5px;margin-bottom: 5px;padding-right:5px;">
+  
+  <div id="userslist" class="span2">
+	  <h3>Users</h3>
+	  <ul id="users"></ul>
+	  <div class="span2">
+		  <h3>Settings</h3>
 
-					<div class="clearfix">
-						<label for="nickname">Nickname</label>
-						<div class="input">
-							<input type="text" id="nickname" name="nickname" value="{{= user }}" class="span2"/>
-						</div>
-					</div>
+		  <form class="form-stacked" onsubmit="return false;">
+			  <fieldset>
 
-				</fieldset>
-			</form>
-		</div>
-	</div>
-	<div class="offset2" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
+				  <div class="clearfix">
+					  <label for="nickname">Nickname</label>
+					  <div class="input">
+						  <input type="text" id="nickname" name="nickname" value="{{= user }}" class="span2"/>
+					  </div>
+				  </div>
+
+			  </fieldset>
+		  </form>
+	  </div>
+  </div>
+  <div class="offset2" style="height:100%;overflow:scroll;overflow-x:auto;border-style:solid;border-width:1px;" id="content"></div>
 </div>
 
 <div class="row" id="footer" style="height: 9%;padding-right:5px;">
-	<div class="offset2">
-		<textarea id="textentry" class="xxlarge" style="width:100%;height:100%;"></textarea>
-	</div>
+  <div class="offset2">
+	  <textarea id="textentry" class="xxlarge" style="width:100%;height:100%;"></textarea>
+  </div>
 </div>
-		-->
+	  -->

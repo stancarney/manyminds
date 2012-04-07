@@ -8,6 +8,7 @@ var express = require('express')
 		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {})
 		, parseCookie = require('connect').utils.parseCookie
 		, urlParser = require('url')
+		, queryString = require('querystring')
 		, utils = require('./utils.js')()
 		, c = require('./channel.js');
 
@@ -19,7 +20,7 @@ var authCheck = function (req, res, next) {
 		return;
 	}
 
-	if (url.pathname == "/chat") {
+	if (url.pathname.startsWith("/chat")) {
 		res.writeHead(403);
 		res.end('Sorry you are unauthorized.\n\nFor a login use: /login?name=max&pwd=herewego');
 		return;
@@ -44,7 +45,7 @@ app.set('view options', {
 
 app.register('.html', require('ejs'));
 
-app.listen(8080);
+app.listen(8000);
 
 app.get('/', function (req, res) {
 	res.sendfile(__dirname + '/views/index.html');
@@ -56,7 +57,7 @@ app.post('/login', function (req, res) {
 	//send to channel
 
 	req.session.auth = true;
-	res.redirect('/chat/' + req.body.channel)
+	res.redirect('/chat?c=' + req.body.channels.replace(/ /g,"&c="));
 });
 
 app.get('/logout', function (req, res) {
@@ -64,8 +65,8 @@ app.get('/logout', function (req, res) {
 	res.redirect('/')
 });
 
-app.get('/chat/:channel', function (req, res) {
-	res.render(__dirname + '/views/chat.html', { user: req.session.user, channel: [req.params.channel] });
+app.get(/^\/chat\\?(?:&?c=\w*)*$/, function (req, res) {
+	res.render(__dirname + '/views/chat.html', { user: req.session.user });
 });
 
 io.set('authorization', function (data, accept) {
@@ -78,7 +79,6 @@ io.set('authorization', function (data, accept) {
 			if (err || !session) {
 				accept('Error', false);
 			} else {
-
 				data.session = new Session(data, session);
 				accept(null, true);
 			}
