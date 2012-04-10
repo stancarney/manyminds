@@ -116,9 +116,11 @@ io.sockets.on('connection', function (socket) {
 		c.scroll(channel, id, socket, db);
 	});
 
-	socket.on('refresh', function (channel) {
-		socket.emit('join', {channel: channel});
-		c.refresh(channel, socket, express, db);
+	socket.on('refresh', function (channels) {
+		for(var i in channels){
+			socket.emit('join', {channel: channels[i]});
+			c.refresh(channels[i], socket, express, db);
+		}
 	});
 
 	socket.on('typing', function () {

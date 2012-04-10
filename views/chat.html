@@ -6,6 +6,7 @@
 	<script type="text/javascript"
 	        src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
 	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-tab.js"></script>
+	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-dropdown.js"></script>
 	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css">
 	<script>
 		$(document).ready(function() {
@@ -17,41 +18,31 @@
 
 			//autoScroll();
 			connect();
-
-			
-			//TODO:Stan I need to parse the channel names out of the query string to send back to the server.
-			function parse() {
-				var nvpair = {};
-				var qs = window.location.search.replace('?', '');
-				var pairs = qs.split('&');
-				$.each(pairs, function(i, v) {
-					var pair = v.split('=');
-					nvpair[pair[0]] = nvpair[pair[0]] ? new Array() : nvpair[pair[0]];   
-					nvpair[pair[0]] = new Array();
-					nvpair[pair[0]] = pair[1];
-				});
-				return nvpair;	}
-			});
 			
 			socket.emit('set nickname', '{{= user }}');
-			socket.emit('refresh', jQuery.parseQuerystring()['c']);
+			socket.emit('refresh', querystring()['c']);
 
 			setInterval(function() {
 				$("ul#users>li.typing").removeClass("typing");
 			}, 5000);
 
 			function connect() {
-				socket = io.connect('http://localhost:8080');
+				socket = io.connect('http://localhost:8000');
 
+				//TODO:Stan this needs to update the URL based on channels joined from another channel
 				socket.on('join', function (data) {
+					
+					//Clone dummy channel
 					var newChannel = $('#channel').clone();
 					newChannel.css('display', '');
 					newChannel.attr('id', data.channel);
 					$('#channels').append(newChannel);
 
-					$('#tabs').append('<li><a href="#' + data.channel + '" data-toggle="pill">' + data.channel + '</a></li>');
-					$('#channels #' + data.channel).tab('show');
-
+					//setup tabs
+					$('#tabs').append('<li><a class="tab" data-toggle="tab" data-target="#channels #' + data.channel + '">' + data.channel + '</a></li>');
+					$('#tabs a:first').tab('show');
+					
+					//add events
 					$(nicknameId(data.channel)).live("keyup", function(e) {
 						if (e.keyCode == 13) socket.emit('set nickname', $(nicknameId(data.channel)).val());
 					});
@@ -137,6 +128,17 @@
 			function nicknameId(channel) {
 				return '#' + channel + ' #nickname';
 			}
+			
+			function querystring() {
+				var nvpair = {};
+				var pairs = window.location.search.replace('?', '').split('&');
+				$.each(pairs, function(i, v) {
+					var pair = v.split('=');
+					if(!nvpair[pair[0]]) nvpair[pair[0]] = new Array();
+					nvpair[pair[0]].push(pair[1]);
+				});
+				return nvpair;	
+			}
 		});
 
 	</script>
@@ -199,8 +201,7 @@
 
 <div class="container-fluid height100">
 	<div class="row">
-		<ul class="nav nav-tabs" id="tabs">
-		</ul>
+		<ul id="tabs" class="nav nav-tabs"></ul>
 	</div>
 	<div id="channels" class="tab-content"></div>
 </div>
