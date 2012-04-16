@@ -104,12 +104,12 @@ io.sockets.on('connection', function (socket) {
 		clearInterval(intervalID);
 	});
 
-	socket.on('set nickname', function (nickname) {
-		c.setNickName('default', nickname, socket, db);
+	socket.on('set nickname', function (channel, nickname) {
+		c.setNickName(channel, nickname, socket, db);
 	});
 
-	socket.on('message', function (message) {
-		c.message(message.channel, message.value, socket, db);
+	socket.on('message', function (channel, value) {
+		c.message(channel, value, socket, db);
 	});
 
 	socket.on('scroll', function (channel, id) {
@@ -118,13 +118,13 @@ io.sockets.on('connection', function (socket) {
 
 	socket.on('refresh', function (channels) {
 		for(var i in channels){
-			socket.emit('join', {channel: channels[i]});
+			socket.emit('join', channels[i]);
 			c.refresh(channels[i], socket, express, db);
 		}
 	});
 
-	socket.on('typing', function () {
-		c.typing('default', socket, db);
+	socket.on('typing', function (channel) {
+		c.typing(channel, socket, db);
 	});
 });
 

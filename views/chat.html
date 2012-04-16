@@ -11,14 +11,15 @@
 	<script>
 		$(document).ready(function() {
 			var socket;
-			var typing = false;
 			var connected = false;
-			var scroll = true;
-			var scrolling = false;
+			
+			//Stan: These need to be made channel specific!
+			var typing = false;
+			var hold = false;
+			var loading = false;
 
 			connect();
 			
-			socket.emit('set nickname', '{{= user }}');
 			socket.emit('refresh', querystring()['c']);
 
 			setInterval(function() {
@@ -29,43 +30,44 @@
 				socket = io.connect('http://localhost:8000');
 
 				//TODO:Stan this needs to update the URL based on channels joined from another channel
-				socket.on('join', function (data) {
+				socket.on('join', function (channel) {
 					
 					//Clone dummy channel
 					var newChannel = $('#channel').clone();
 					newChannel.css('display', '');
-					newChannel.attr('id', data.channel);
+					newChannel.attr('id', channel);
 					$('#channels').append(newChannel);
 
 					//setup tabs
-					$('#tabs').append('<li><a id="'+ data.channel +'" class="tab" data-toggle="tab" data-target="#channels #' + data.channel + '">' + data.channel + '</a></li>');
+					$('#tabs').append('<li><a id="'+ channel +'" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '</a></li>');
 					$('#tabs a:first').tab('show');
 					
-					autoScroll(data.channel);
+					socket.emit('set nickname', channel, '{{= user }}');
+					autoScroll(channel);
 					
 					//add events
-					$('#tabs #' + data.channel).on("click", function(e) {
-						autoScroll(data.channel);
+					$('#tabs #' + channel).on("click", function(e) {
+						autoScroll(channel);
 					});
 					
 					$('a[data-toggle="tab"]').on('shown', function (e) {
 					    autoScroll($(e.target).attr('id'));
 					});
 					
-					$(nicknameId(data.channel)).on("keyup", function(e) {
-						if (e.keyCode == 13) socket.emit('set nickname', $(nicknameId(data.channel)).val());
+					$(nicknameId(channel)).on("keyup", function(e) {
+						if (e.keyCode == 13) socket.emit('set nickname', channel, $(nicknameId(channel)).val());
 					});
 
-					$(textentryId(data.channel)).on("keyup", function(e) {
-						var textarea = $(textentryId(data.channel));
+					$(textentryId(channel)).on("keyup", function(e) {
+						var textarea = $(textentryId(channel));
 						if (e.keyCode == 13) {
-							socket.emit('message', { channel: data.channel, value: textarea.val() });
+							socket.emit('message', channel, textarea.val() );
 							textarea.val('');
-							autoScroll(data.channel);
+							autoScroll(channel);
 						} else {
 							if (!typing) {
 								typing = true;
-								socket.emit('typing');
+								socket.emit('typing', channel);
 							}
 
 							setTimeout(function() {
@@ -74,51 +76,52 @@
 						}
 					});
 
-					$(contentId(data.channel)).on("scroll", function() {
-						if (!scrolling) {
-							if ($(contentId(data.channel)).scrollTop() == 0) {
-								socket.emit('scroll', $('div.message').first().attr('id'));
+					$(contentId(channel)).on("scroll", function() {
+						if (!loading) {
+							if ($(contentId(channel)).scrollTop() == 0) {
+								socket.emit('scroll', channel, $('div.message').first().attr('id'));
 							}
 
-							if ($(contentId(data.channel)).scrollTop() + $(contentId(data.channel)).height() == $(contentId(data.channel))[0].scrollHeight) {
-								scroll = true;
-								autoScroll(data.channel);
+							if ($(contentId(channel)).scrollTop() + $(contentId(channel)).height() == $(contentId(channel))[0].scrollHeight) {
+								hold = false;
+								autoScroll(channel);
 							} else {
-								scroll = false;
+								hold = true;
 							}
 						}
 					});
 				});
 
-				socket.on('new', function (data) {
-					$(contentId(data.channel)).append('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
-					if (scroll) autoScroll(data.channel);
+				socket.on('new', function (message) {
+					$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.nickname + ':</strong> ' + message.value + '</div>');
+					if (!hold) autoScroll(message.channel);
 				});
 
-				socket.on('old', function (data) {
-					scrolling = true;
-					$(contentId(data.channel)).prepend('<div class="message" id=' + data._id + '>' + '[' + new Date(data.timestamp).toLocaleTimeString() + '] <strong>' + data.nickname + ':</strong> ' + data.value + '</div>');
-					$(contentId(data.channel)).scrollTop(1);
+				socket.on('old', function (message) {
+					loading = true;
+					$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.nickname + ':</strong> ' + message.value + '</div>');
+					$(contentId(message.channel)).scrollTop(1);
 				});
 
-				socket.on('complete', function (data) {
-					scrolling = false;
+				//stop scrolling when the server says it is complete
+				socket.on('complete', function (channel) {
+					loading = false;
 				});
 
-				socket.on('day', function (data) {
-					$(contentId(data.channel)).prepend('<div class="day"><span class="day">' + new Date(data.timestamp).toLocaleDateString() + '</span></div>');
+				socket.on('day', function (channel, timestamp) {
+					$(contentId(channel)).prepend('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>');
 				});
 
-				socket.on('add user', function (data) {
-					$('#users').append('<li style="list-style-type:none" id="user_' + data.id + '"><i class="icon-user"></i> ' + data.nickname + '</li>');
+				socket.on('add user', function (channel, nickname, id) {
+					$(usersId(channel)).append('<li style="list-style-type:none" id="user_' + id + '"><i class="icon-user"></i> ' + nickname + '</li>');
 				});
 
-				socket.on('remove user', function (data) {
-					$('#user_' + data.id).remove();
+				socket.on('remove user', function (channel, id) {
+					$(userId(channel, id)).remove();
 				});
 
-				socket.on('typing', function (data) {
-					$('#user_' + data.id).addClass('typing');
+				socket.on('typing', function (channel, id) {
+					$(userId(channel, id)).addClass('typing');
 				});
 			}
 
@@ -127,6 +130,14 @@
 				element.animate({scrollTop: element[0].scrollHeight}, 0);
 			}
 
+			function userId(channel, id) {
+				return '#' + channel + ' #user_' + id;
+			}
+			
+			function usersId(channel) {
+				return '#' + channel + ' #users';
+			}
+			
 			function contentId(channel) {
 				return '#' + channel + ' #content';
 			}
@@ -204,7 +215,7 @@
 	</div>
 	<div id="channel" class="tab-pane" style="display:none;height:100%;">
 		<div class="span2" style="width:140px;">
-			<div id="userslist" class="well">
+			<div class="well">
 				<h3>Users</h3>
 				<ul id="users"></ul>
 				<h3>Settings</h3>

@@ -33,12 +33,12 @@ exports.scroll = function(channel, id, socket, db) {
 					//emit day break.
 					var next = parseInt(i) + 1;
 					if (next < records.length && utcDay(records[i].timestamp) > utcDay(records[next].timestamp)) {
-						socket.emit('day', {timestamp: records[i].timestamp});
+						socket.emit('day', channel, records[i].timestamp);
 					}
 				}
 			}
 
-			socket.emit('complete');
+			socket.emit('complete', channel);
 		});
 	});
 };
@@ -59,24 +59,19 @@ exports.refresh = function(channel, socket, express, db) {
 };
 
 exports.typing = function(channel, socket, db) {
-	socket.get('nickname', function (err, nickname) {
-		socket.broadcast.emit('typing', { id: socket.id });
-	});
+	socket.broadcast.emit('typing', channel, socket.id);
 };
 
 exports.setNickName = function(channel, nickname, socket, db) {
-	socket.set('nickname', nickname, function () {
+	//if exists
+	socket.emit('remove user', channel, socket.id );
+	socket.broadcast.emit('remove user', channel, socket.id );
+	socket.emit('add user', channel, nickname, socket.id );
+	socket.broadcast.emit('add user', channel, nickname, socket.id );
 
-		//if exists
-		socket.emit('remove user', { nickname: nickname, id: socket.id });
-		socket.broadcast.emit('remove user', { nickname: nickname, id: socket.id });
-		socket.emit('add user', { nickname: nickname, id: socket.id });
-		socket.broadcast.emit('add user', { nickname: nickname, id: socket.id });
-
-		var msg = new m.Message('system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
-		m.save(msg);
-		socket.broadcast.emit('message', m);
-	});
+	var msg = new m.Message(channel, 'system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
+	m.save(msg);
+	socket.broadcast.emit('message', m);
 };
 
 function utcDay(timestamp) {
