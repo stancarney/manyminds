@@ -13,10 +13,9 @@
 			var socket;
 			var connected = false;
 			
-			//Stan: These need to be made channel specific!
-			var typing = false;
-			var hold = false;
-			var loading = false;
+			var typing = {};
+			var hold = {};
+			var loading = {};
 
 			connect();
 			
@@ -31,6 +30,11 @@
 
 				//TODO:Stan this needs to update the URL based on channels joined from another channel
 				socket.on('join', function (channel) {
+					
+					//setup channel vars
+					typing[channel] = false;
+					hold[channel] = false;
+					loading[channel] = false;
 					
 					//Clone dummy channel
 					var newChannel = $('#channel').clone();
@@ -65,28 +69,28 @@
 							textarea.val('');
 							autoScroll(channel);
 						} else {
-							if (!typing) {
-								typing = true;
+							if (!typing[channel]) {
+								typing[channel] = true;
 								socket.emit('typing', channel);
 							}
 
 							setTimeout(function() {
-								typing = false;
+								typing[channel] = false;
 							}, 2000);
 						}
 					});
 
 					$(contentId(channel)).on("scroll", function() {
-						if (!loading) {
+						if (!loading[channel]) {
 							if ($(contentId(channel)).scrollTop() == 0) {
-								socket.emit('scroll', channel, $('div.message').first().attr('id'));
+								socket.emit('scroll', channel, $(contentId(channel)).find('div.message').first().attr('id'));
 							}
 
 							if ($(contentId(channel)).scrollTop() + $(contentId(channel)).height() == $(contentId(channel))[0].scrollHeight) {
-								hold = false;
+								hold[channel] = false;
 								autoScroll(channel);
 							} else {
-								hold = true;
+								hold[channel] = true;
 							}
 						}
 					});
@@ -94,18 +98,18 @@
 
 				socket.on('new', function (message) {
 					$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.nickname + ':</strong> ' + message.value + '</div>');
-					if (!hold) autoScroll(message.channel);
+					if (!hold[message.channel]) autoScroll(message.channel);
 				});
 
 				socket.on('old', function (message) {
-					loading = true;
+					loading[message.channel] = true;
 					$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.nickname + ':</strong> ' + message.value + '</div>');
 					$(contentId(message.channel)).scrollTop(1);
 				});
 
 				//stop scrolling when the server says it is complete
 				socket.on('complete', function (channel) {
-					loading = false;
+					loading[channel] = false;
 				});
 
 				socket.on('day', function (channel, timestamp) {
