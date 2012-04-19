@@ -30,25 +30,23 @@ var authCheck = function (req, res, next) {
 }
 
 app.configure(function() {
-	app.use(express.cookieParser());
+	app.use(express.cookieParser('secret'));
 	app.use(express.session({store: sessionStore , secret: 'secret' , key: 'express.sid'}));
 	app.use(express.bodyParser());
 	app.use("/public", express.static(__dirname + '/public'));
 	app.use(authCheck);
+	app.set('view engine', 'ejs');
+	app.set('view options', {
+		open: '{{',
+		close: '}}',
+		layout: false
+	});
 });
-
-app.set('view options', {
-	open: '{{',
-	close: '}}',
-	layout: false
-});
-
-app.register('.html', require('ejs'));
 
 app.listen(8000);
 
 app.get('/', function (req, res) {
-	res.sendfile(__dirname + '/views/index.html');
+	res.render(__dirname + '/views/index');
 });
 
 app.post('/login', function (req, res) {
@@ -66,7 +64,7 @@ app.get('/logout', function (req, res) {
 });
 
 app.get(/^\/chat\\?(?:&?c=\w*)*$/, function (req, res) {
-	res.render(__dirname + '/views/chat.html', { user: req.session.user });
+	res.render(__dirname + '/views/chat', { user: req.session.user });
 });
 
 io.set('authorization', function (data, accept) {
