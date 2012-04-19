@@ -50,12 +50,19 @@ app.get('/', function (req, res) {
 });
 
 app.post('/login', function (req, res) {
-	req.session.user = req.body.username;
 
-	//send to channel
-
-	req.session.auth = true;
-	res.redirect('/chat?c=' + req.body.channels.replace(/ /g,"&c="));
+	db.collection('users', function(err, collection) {
+		collection.findOne({'username': req.body.username, 'password': req.body.password}, function(err, obj) {
+			if(obj) {
+				req.session.user = req.body.username;
+				req.session.auth = true;
+				res.redirect('/chat?c=' + req.body.channels.replace(/ /g,"&c="));
+			} else {
+				res.writeHead(403);
+				res.end('Sorry you are unauthorized.\n\nFor a login use: /login?name=max&pwd=herewego');
+			}
+		});
+	});
 });
 
 app.get('/logout', function (req, res) {
