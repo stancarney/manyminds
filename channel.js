@@ -1,18 +1,27 @@
 var m = require('./message.js')
 	, mongo = require('mongodb')
-	, commands = require('./commands.js');
+	, commands = require('./commands.js')
+  , channels = {};
 
 exports.join = function(channel, socket, db) {
 	socket.get('user', function (err, user) {
 		socket.emit('join', channel);
-		socket.emit('remove user', channel, socket.id ); //incase the old user still exists for some reason.
-		socket.broadcast.emit('remove user', channel, socket.id );
-		socket.emit('add user', channel, user.name, socket.id );
+
+		//socket.emit('remove user', channel, socket.id ); //incase the old user still exists for some reason.
+		//socket.broadcast.emit('remove user', channel, socket.id );
+		
+		removeUser(channel, user);
+		addUser(channel, user);
+		
 		socket.broadcast.emit('add user', channel, user.name, socket.id );
+		var c = channels[channel];
+		for (var i in c) {
+			socket.emit('add user', channel, c[i], socket.id );
+		}
 
 		var msg = new m.Message(channel, 'system', user.name + ' is now known as ' + user.name, new Date()); //need to sort old name.
 		m.save(msg);
-		socket.broadcast.emit('message', m);
+		socket.broadcast.emit('new', msg);
 	});
 };
 
@@ -71,4 +80,21 @@ exports.typing = function(channel, socket, db) {
 
 function utcDay(timestamp) {
 	return parseInt(timestamp.getTime() / 100000000);
+}
+
+function addUser(channel, user) {
+	var c = channels[channel];
+	if(c) {
+		c.push(user.name);
+	} else {
+		channels[channel] = [user.name];
+	}
+}
+
+function removeUser(channel, user) {
+	var c = channels[channel];
+	if(c) {
+		var index = c.indexOf(user.name);
+		if(index != -1) c.splice(index, 1);
+	}
 }
