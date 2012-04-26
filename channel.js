@@ -2,6 +2,20 @@ var m = require('./message.js')
 	, mongo = require('mongodb')
 	, commands = require('./commands.js');
 
+exports.join = function(channel, socket, db) {
+	socket.get('user', function (err, user) {
+		socket.emit('join', channel);
+		socket.emit('remove user', channel, socket.id ); //incase the old user still exists for some reason.
+		socket.broadcast.emit('remove user', channel, socket.id );
+		socket.emit('add user', channel, user.name, socket.id );
+		socket.broadcast.emit('add user', channel, user.name, socket.id );
+
+		var msg = new m.Message(channel, 'system', user.name + ' is now known as ' + user.name, new Date()); //need to sort old name.
+		m.save(msg);
+		socket.broadcast.emit('message', m);
+	});
+};
+
 exports.message = function(channel, value, socket, db) {
 	socket.get('user', function (err, user) {
 
@@ -12,6 +26,21 @@ exports.message = function(channel, value, socket, db) {
 			socket.emit('new', msg);
 			socket.broadcast.emit('new', msg);
 		}
+	});
+};
+
+exports.refresh = function(channel, socket, db) {
+	var BSON = mongo.BSONPure;
+	db.collection('messages', function(err, collection) {
+
+		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
+			for (var i in records.reverse()) {
+				if (records[i] != null) {
+					console.log('channel: ' + records[i].channel, 'name: ' + records[i].username, 'message' + records[i].message);
+					socket.emit('new', records[i]);
+				}
+			}
+		});
 	});
 };
 
@@ -31,42 +60,13 @@ exports.scroll = function(channel, id, socket, db) {
 					}
 				}
 			}
-
 			socket.emit('complete', channel);
 		});
 	});
 };
 
-exports.refresh = function(channel, socket, express, db) {
-	var BSON = mongo.BSONPure;
-	db.collection('messages', function(err, collection) {
-
-		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
-			for (var i in records.reverse()) {
-				if (records[i] != null) {
-					console.log('channel: ' + records[i].channel, 'name: ' + records[i].username, 'message' + records[i].message);
-					socket.emit('new', records[i]);
-				}
-			}
-		});
-	});
-};
-
 exports.typing = function(channel, socket, db) {
-	socket.broadcast.emit('typing', channel, socket.id);
-};
-
-exports.join = function(channel, socket, db) {
-	socket.get('user', function (err, user) {
-		socket.emit('remove user', channel, socket.id );
-		socket.broadcast.emit('remove user', channel, socket.id );
-		socket.emit('add user', channel, user.name, socket.id );
-		socket.broadcast.emit('add user', channel, user.name, socket.id );
-
-		var msg = new m.Message(channel, 'system', user.name + ' is now known as ' + user.name, new Date()); //need to sort old name.
-		m.save(msg);
-		socket.broadcast.emit('message', m);
-	});
+	socket.volatile.broadcast.emit('typing', channel, socket.id);
 };
 
 function utcDay(timestamp) {

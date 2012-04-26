@@ -97,21 +97,17 @@ io.sockets.on('connection', function (socket) {
 	var hs = socket.handshake;
 	console.log('A socket with sessionID ' + hs.sessionID + ' connected!');
 
-	socket.set('user', hs.session.user, function () {});
-
 	var intervalID = setInterval(function () {
 		hs.session.reload(function () {
 			hs.session.touch().save();
 		});
 	}, 60 * 1000);
 
+	socket.set('user', hs.session.user);
+
 	socket.on('disconnect', function () {
 		console.log('A socket with sessionID ' + hs.sessionID + ' disconnected!');
 		clearInterval(intervalID);
-	});
-
-	socket.on('join', function (channel) {
-		c.join(channel, socket, db);
 	});
 
 	socket.on('message', function (channel, value) {
@@ -123,9 +119,9 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	socket.on('refresh', function (channels) {
-		for(var i in channels){
-			socket.emit('join', channels[i]);
-			c.refresh(channels[i], socket, express, db);
+		for(var i in channels) {
+			c.join(channels[i], socket, db);
+			c.refresh(channels[i], socket, db);
 		}
 	});
 
