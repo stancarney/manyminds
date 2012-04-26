@@ -15,7 +15,7 @@ var express = require('express')
 var authCheck = function (req, res, next) {
 	url = req.urlp = urlParser.parse(req.url, true);
 
-	if (req.session && req.session.auth == true || url.pathname == "/") {
+	if (req.session && req.session.user || url.pathname == "/") {
 		next();
 		return;
 	}
@@ -52,10 +52,9 @@ app.get('/', function (req, res) {
 app.post('/login', function (req, res) {
 
 	db.collection('users', function(err, collection) {
-		collection.findOne({'username': req.body.username, 'password': req.body.password}, function(err, obj) {
+		collection.findOne({'name': req.body.username, 'password': req.body.password}, function(err, obj) {
 			if(obj) {
-				req.session.user = req.body.username;
-				req.session.auth = true;
+				req.session.user = obj;
 				res.redirect('/chat?c=' + req.body.channels.replace(/ /g,"&c="));
 			} else {
 				res.writeHead(403);
@@ -98,6 +97,8 @@ io.sockets.on('connection', function (socket) {
 	var hs = socket.handshake;
 	console.log('A socket with sessionID ' + hs.sessionID + ' connected!');
 
+	socket.set('user', hs.session.user, function () {});
+
 	var intervalID = setInterval(function () {
 		hs.session.reload(function () {
 			hs.session.touch().save();
@@ -109,8 +110,8 @@ io.sockets.on('connection', function (socket) {
 		clearInterval(intervalID);
 	});
 
-	socket.on('set nickname', function (channel, nickname) {
-		c.setNickName(channel, nickname, socket, db);
+	socket.on('join', function (channel) {
+		c.join(channel, socket, db);
 	});
 
 	socket.on('message', function (channel, value) {

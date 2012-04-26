@@ -2,16 +2,10 @@ var m = require('./message.js')
 	, mongo = require('mongodb')
 	, commands = require('./commands.js');
 
-exports.join = function(channel, socket, db) {
-	//check to see if it exists.
+exports.message = function(channel, value, socket, db) {
+	socket.get('user', function (err, user) {
 
-	//if not create.
-};
-
-exports.message = function(channel, message, socket, db) {
-	socket.get('nickname', function (err, nickname) {
-
-		var msg = new m.Message(channel, nickname, message, new Date());
+		var msg = new m.Message(channel, user.name, value, new Date());
 
 		if (!commands(msg, socket, db)) {
 			m.save(msg, db);
@@ -50,7 +44,7 @@ exports.refresh = function(channel, socket, express, db) {
 		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
 			for (var i in records.reverse()) {
 				if (records[i] != null) {
-					console.log('channel: ' + records[i].channel, 'name: ' + records[i].nickname, 'message' + records[i].message);
+					console.log('channel: ' + records[i].channel, 'name: ' + records[i].username, 'message' + records[i].message);
 					socket.emit('new', records[i]);
 				}
 			}
@@ -62,16 +56,17 @@ exports.typing = function(channel, socket, db) {
 	socket.broadcast.emit('typing', channel, socket.id);
 };
 
-exports.setNickName = function(channel, nickname, socket, db) {
-	//if exists
-	socket.emit('remove user', channel, socket.id );
-	socket.broadcast.emit('remove user', channel, socket.id );
-	socket.emit('add user', channel, nickname, socket.id );
-	socket.broadcast.emit('add user', channel, nickname, socket.id );
+exports.join = function(channel, socket, db) {
+	socket.get('user', function (err, user) {
+		socket.emit('remove user', channel, socket.id );
+		socket.broadcast.emit('remove user', channel, socket.id );
+		socket.emit('add user', channel, user.name, socket.id );
+		socket.broadcast.emit('add user', channel, user.name, socket.id );
 
-	var msg = new m.Message(channel, 'system', nickname + ' is now known as ' + nickname, new Date()); //need to sort old name.
-	m.save(msg);
-	socket.broadcast.emit('message', m);
+		var msg = new m.Message(channel, 'system', user.name + ' is now known as ' + user.name, new Date()); //need to sort old name.
+		m.save(msg);
+		socket.broadcast.emit('message', m);
+	});
 };
 
 function utcDay(timestamp) {

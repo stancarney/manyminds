@@ -46,7 +46,6 @@
 					$('#tabs').append('<li><a id="'+ channel +'" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '</a></li>');
 					$('#tabs a:first').tab('show');
 					
-					socket.emit('set nickname', channel, '{{= user }}');
 					autoScroll(channel);
 					
 					//add events
@@ -56,10 +55,6 @@
 					
 					$('a[data-toggle="tab"]').on('shown', function (e) {
 					    autoScroll($(e.target).attr('id'));
-					});
-					
-					$(nicknameId(channel)).on("keyup", function(e) {
-						if (e.keyCode == 13) socket.emit('set nickname', channel, $(nicknameId(channel)).val());
 					});
 
 					$(textentryId(channel)).on("keyup", function(e) {
@@ -97,13 +92,13 @@
 				});
 
 				socket.on('new', function (message) {
-					$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.nickname + ':</strong> ' + message.value + '</div>');
+					$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
 					if (!hold[message.channel]) autoScroll(message.channel);
 				});
 
 				socket.on('old', function (message) {
 					loading[message.channel] = true;
-					$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.nickname + ':</strong> ' + message.value + '</div>');
+					$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
 					$(contentId(message.channel)).scrollTop(1);
 				});
 
@@ -116,8 +111,8 @@
 					$(contentId(channel)).prepend('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>');
 				});
 
-				socket.on('add user', function (channel, nickname, id) {
-					$(usersId(channel)).append('<li style="list-style-type:none" id="user_' + id + '"><i class="icon-user"></i> ' + nickname + '</li>');
+				socket.on('add user', function (channel, user, id) {
+					$(usersId(channel)).append('<li style="list-style-type:none" id="user_' + id + '"><i class="icon-user"></i> ' + user.name + '</li>');
 				});
 
 				socket.on('remove user', function (channel, id) {
@@ -148,10 +143,6 @@
 
 			function textentryId(channel) {
 				return '#' + channel + ' #textentry';
-			}
-
-			function nicknameId(channel) {
-				return '#' + channel + ' #nickname';
 			}
 			
 			function querystring() {
@@ -223,13 +214,6 @@
 				<h3>Users</h3>
 				<ul id="users"></ul>
 				<h3>Settings</h3>
-
-				<form class="form-stacked" onsubmit="return false;">
-					<fieldset>
-						<label for="nickname">Nickname</label>
-						<input class="input-small" type="text" id="nickname" name="nickname" value="{{= user }}"/>
-					</fieldset>
-				</form>
 			</div>
 		</div>
 		<div class="offset2" style="height:100%;">

@@ -1,6 +1,6 @@
-exports.Message = function (channel, nickname, value, timestamp) {
+exports.Message = function (channel, username, value, timestamp) {
 	this.channel = channel;
-	this.nickname = nickname;
+	this.username = username;
 	this.value = value;
 	this.timestamp = timestamp;
 }
