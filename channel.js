@@ -7,8 +7,8 @@ exports.join = function(channel, socket, db) {
 	socket.get('user', function (err, user) {
 		socket.emit('join', channel);
 
-		//socket.emit('remove user', channel, socket.id ); //incase the old user still exists for some reason.
-		//socket.broadcast.emit('remove user', channel, socket.id );
+		//incase the old user is still connected.
+		socket.broadcast.emit('remove user', channel, user.name );
 		
 		removeUser(channel, user);
 		addUser(channel, user);
@@ -19,7 +19,7 @@ exports.join = function(channel, socket, db) {
 			socket.emit('add user', channel, c[i], user.name );
 		}
 
-		var msg = new m.Message(channel, 'system', user.name + ' is now known as ' + user.name, new Date()); //need to sort old name.
+		var msg = new m.Message(channel, 'system', user.name + ' connected!', new Date()); //need to sort old name.
 		m.save(msg);
 		socket.broadcast.emit('new', msg);
 	});
