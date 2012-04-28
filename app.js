@@ -118,6 +118,10 @@ io.sockets.on('connection', function (socket) {
 		c.scroll(channel, id, socket, db);
 	});
 
+	socket.on('quit', function () {
+		c.quit(socket, db);
+	});
+
 	socket.on('refresh', function (channels) {
 		for(var i in channels) {
 			c.join(channels[i], socket, db);

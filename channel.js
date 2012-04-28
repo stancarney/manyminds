@@ -8,21 +8,37 @@ exports.join = function(channel, socket, db) {
 		socket.emit('join', channel);
 
 		//incase the old user is still connected.
-		socket.broadcast.emit('remove user', channel, user.name );
-		
 		removeUser(channel, user);
-		addUser(channel, user);
+		socket.broadcast.emit('remove user', channel, user.name);
 		
+		addUser(channel, user);
 		socket.broadcast.emit('add user', channel, user.name);
+
 		var c = channels[channel];
 		for (var i in c) {
-			socket.emit('add user', channel, c[i], user.name );
+			socket.emit('add user', channel, c[i], user.name);
 		}
 
-		var msg = new m.Message(channel, 'system', user.name + ' connected!', new Date()); //need to sort old name.
-		var msg = new m.Message(channel, 'system', user.name + ' connected!', new Date()); //need to sort old name.
+		var msg = new m.Message(channel, 'system', user.name + ' joined!', new Date());
 		m.save(msg, db);
 		emitMessage(socket.broadcast, msg);
+	});
+};
+
+exports.quit = function(socket, db) {
+	socket.get('user', function (err, user) {
+		for (var c in channels) {
+			var v = channels[c];
+			for (var u in v) {
+				if(v[u] == user.name) {
+					var msg = new m.Message(c, 'system', user.name + ' quit!', new Date());
+					m.save(msg, db);
+					emitMessage(socket.broadcast, msg);
+					removeUser(c, user);
+					socket.broadcast.emit('remove user', c, user.name);
+				}
+			}
+		}
 	});
 };
 
@@ -107,6 +123,6 @@ function removeUser(channel, user) {
 }
 
 function emitMessage (socket, msg) {
-	console.log('channel: ' + msg.channel, 'name: ' + msg.username, 'message' + msg.message);
+	console.log('channel: ' + msg.channel, 'name: ' + msg.username, 'message: ' + msg.value);
 	socket.emit('new', msg);
 }

@@ -21,6 +21,10 @@
 			
 			socket.emit('refresh', querystring()['c']);
 
+			$(window).bind('beforeunload', function() {
+				socket.emit('quit');
+			});
+
 			setInterval(function() {
 				$("ul#users>li.typing").removeClass("typing");
 			}, 5000);
