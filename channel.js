@@ -20,8 +20,9 @@ exports.join = function(channel, socket, db) {
 		}
 
 		var msg = new m.Message(channel, 'system', user.name + ' connected!', new Date()); //need to sort old name.
-		m.save(msg);
-		socket.broadcast.emit('new', msg);
+		var msg = new m.Message(channel, 'system', user.name + ' connected!', new Date()); //need to sort old name.
+		m.save(msg, db);
+		emitMessage(socket.broadcast, msg);
 	});
 };
 
@@ -32,8 +33,8 @@ exports.message = function(channel, value, socket, db) {
 
 		if (!commands(msg, socket, db)) {
 			m.save(msg, db);
-			socket.emit('new', msg);
-			socket.broadcast.emit('new', msg);
+			emitMessage(socket, msg);
+			emitMessage(socket.broadcast, msg);
 		}
 	});
 };
@@ -45,8 +46,12 @@ exports.refresh = function(channel, socket, db) {
 		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
 			for (var i in records.reverse()) {
 				if (records[i] != null) {
-					console.log('channel: ' + records[i].channel, 'name: ' + records[i].username, 'message' + records[i].message);
-					socket.emit('new', records[i]);
+					emitMessage(socket, records[i]);
+
+					var next = parseInt(i) + 1;
+					if (next < records.length && utcDay(records[i].timestamp) < utcDay(records[next].timestamp)) {
+						socket.emit('day forward', channel, records[i].timestamp);
+					}
 				}
 			}
 		});
@@ -65,7 +70,7 @@ exports.scroll = function(channel, id, socket, db) {
 					//emit day break.
 					var next = parseInt(i) + 1;
 					if (next < records.length && utcDay(records[i].timestamp) > utcDay(records[next].timestamp)) {
-						socket.emit('day', channel, records[i].timestamp);
+						socket.emit('day backward', channel, records[i].timestamp);
 					}
 				}
 			}
@@ -99,4 +104,9 @@ function removeUser(channel, user) {
 		var index = c.indexOf(user.name);
 		if(index != -1) c.splice(index, 1);
 	}
+}
+
+function emitMessage (socket, msg) {
+	console.log('channel: ' + msg.channel, 'name: ' + msg.username, 'message' + msg.message);
+	socket.emit('new', msg);
 }
