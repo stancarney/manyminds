@@ -111,16 +111,16 @@
 					$(contentId(channel)).prepend('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>');
 				});
 
-				socket.on('add user', function (channel, username, id) {
-					$(usersId(channel)).append('<li style="list-style-type:none" id="user_' + id + '"><i class="icon-user"></i> ' + username + '</li>');
+				socket.on('add user', function (channel, username) {
+					$(usersId(channel)).append('<li style="list-style-type:none" id="user_' + username + '"><i class="icon-user"></i> ' + username + '</li>');
 				});
 
-				socket.on('remove user', function (channel, id) {
-					$(userId(channel, id)).remove();
+				socket.on('remove user', function (channel, username) {
+					$(userId(channel, username)).remove();
 				});
 
-				socket.on('typing', function (channel, id) {
-					$(userId(channel, id)).addClass('typing');
+				socket.on('typing', function (channel, username) {
+					$(userId(channel, username)).addClass('typing');
 				});
 			}
 
@@ -129,8 +129,8 @@
 				element.animate({scrollTop: element[0].scrollHeight}, 0);
 			}
 
-			function userId(channel, id) {
-				return '#' + channel + ' #user_' + id;
+			function userId(channel, username) {
+				return '#' + channel + ' #user_' + username;
 			}
 			
 			function usersId(channel) {

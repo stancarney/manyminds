@@ -13,10 +13,10 @@ exports.join = function(channel, socket, db) {
 		removeUser(channel, user);
 		addUser(channel, user);
 		
-		socket.broadcast.emit('add user', channel, user.name, socket.id );
+		socket.broadcast.emit('add user', channel, user.name);
 		var c = channels[channel];
 		for (var i in c) {
-			socket.emit('add user', channel, c[i], socket.id );
+			socket.emit('add user', channel, c[i], user.name );
 		}
 
 		var msg = new m.Message(channel, 'system', user.name + ' is now known as ' + user.name, new Date()); //need to sort old name.
@@ -75,7 +75,9 @@ exports.scroll = function(channel, id, socket, db) {
 };
 
 exports.typing = function(channel, socket, db) {
-	socket.volatile.broadcast.emit('typing', channel, socket.id);
+	socket.get('user', function (err, user) {
+		socket.volatile.broadcast.emit('typing', channel, user.name);
+	});
 };
 
 function utcDay(timestamp) {
