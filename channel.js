@@ -44,15 +44,22 @@ exports.quit = function(socket, db) {
 
 exports.message = function(channel, value, socket, db) {
 	socket.get('user', function (err, user) {
-
+		
 		var msg = new m.Message(channel, user.name, value, new Date());
-
 		if (!commands(msg, socket, db)) {
 			m.save(msg, db);
 			emitMessage(socket, msg);
 			emitMessage(socket.broadcast, msg);
 		}
 	});
+};
+
+exports.file = function(channel, user, value, socket, db) {
+	var msg = new m.Message(channel, user.name, value, new Date());
+	msg.file = 'file';
+	msg.contentType = 'image/png';
+	m.save(msg, db);
+	socket.emit('new file', msg);
 };
 
 exports.refresh = function(channel, socket, db) {
@@ -81,7 +88,7 @@ exports.scroll = function(channel, id, socket, db) {
 		collection.find({'_id': {$lt: new BSON.ObjectID(id)}, 'channel': channel}).sort({_id: -1}).limit(100).toArray(function(err, records) {
 			for (var i in records) {
 				if (records[i] != null) {
-					socket.emit('old', records[i]);
+					socket.emit('old message', records[i]);
 
 					//emit day break.
 					var next = parseInt(i) + 1;
@@ -124,5 +131,5 @@ function removeUser(channel, user) {
 
 function emitMessage (socket, msg) {
 	console.log('channel: ' + msg.channel, 'name: ' + msg.username, 'message: ' + msg.value);
-	socket.emit('new', msg);
+	socket.emit('new message', msg);
 }

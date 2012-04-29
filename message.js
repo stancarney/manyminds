@@ -3,6 +3,8 @@ exports.Message = function (channel, username, value, timestamp) {
 	this.username = username;
 	this.value = value;
 	this.timestamp = timestamp;
+	this.path = null;
+	this.contentType = 'text/plain';
 }
 
 exports.getCommand = function (message) {

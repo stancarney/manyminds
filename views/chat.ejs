@@ -117,12 +117,17 @@
 					});
 				});
 
-				socket.on('new', function (message) {
+				socket.on('new message', function (message) {
 					$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
 					if (!hold[message.channel]) autoScroll(message.channel);
 				});
+				
+				socket.on('new file', function (channel, message) {
+					$(contentId(message.channel)).append('<div class="image" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value.path + '</div>');
+					if (!hold[message.channel]) autoScroll(message.channel);
+				});
 
-				socket.on('old', function (message) {
+				socket.on('old message', function (message) {
 					loading[message.channel] = true;
 					$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
 					$(contentId(message.channel)).scrollTop(1);

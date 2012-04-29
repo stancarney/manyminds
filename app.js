@@ -74,10 +74,15 @@ app.get(/^\/chat\\?(?:&?c=\w*)*$/, function (req, res) {
 });
 
 app.post('/upload/:channel', function (req, res) {
-	console.log('channel: ' + req.params.channel + ' received file: ' + req.files + ' for: ' + req.session.user.name + ' ');
+	var user = req.session.user;
+	var channel = req.params.channel;
+
 	for (i in req.files){
-		io.sockets.emit('new image', req.params.channel, req.files[i]);
+		var file = req.files[i];
+		c.file(channel, user, file, io.sockets, db);
 	}
+
+	console.log('channel: ' + channel + ' received file: ' + req.files + ' for: ' + user.name + ' ');
 });
 
 io.set('authorization', function (data, accept) {
