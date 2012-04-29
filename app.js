@@ -73,6 +73,13 @@ app.get(/^\/chat\\?(?:&?c=\w*)*$/, function (req, res) {
 	res.render(__dirname + '/views/chat', { user: req.session.user });
 });
 
+app.post('/upload/:channel', function (req, res) {
+	console.log('channel: ' + req.params.channel + ' received file: ' + req.files + ' for: ' + req.session.user.name + ' ');
+	for (i in req.files){
+		io.sockets.emit('new image', req.params.channel, req.files[i]);
+	}
+});
+
 io.set('authorization', function (data, accept) {
 	if (data.headers.cookie) {
 		data.cookie = parseCookie(data.headers.cookie);

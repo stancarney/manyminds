@@ -3,11 +3,13 @@
 <head>
 	<script src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
 	<script type="text/javascript"
 	        src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
 	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-tab.js"></script>
 	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-dropdown.js"></script>
-	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css">
+	<script type="text/javascript" src="https://raw.github.com/blueimp/jQuery-File-Upload/master/js/jquery.fileupload.js"></script>
+	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css"></link>
 	<script>
 		$(document).ready(function() {
 			var socket;
@@ -16,6 +18,10 @@
 			var typing = {};
 			var hold = {};
 			var loading = {};
+
+			$(document).bind('drop dragover', function (e) {
+					e.preventDefault();
+			});
 
 			connect();
 			
@@ -92,6 +98,22 @@
 								hold[channel] = true;
 							}
 						}
+					});
+
+					$(contentId(channel)).fileupload({
+							dataType: 'json',
+							url: '/upload/' + channel,
+							dropZone: $(contentId(channel)),
+							drop: function (e, data) {
+									$.each(data.files, function (index, file) {
+										$(this).fileupload('send', {files: file});
+									});
+							},
+							done: function (e, data) {
+									$.each(data.result, function (index, file) {
+											$('<p/>').text(file.name).appendTo(document.body);
+									});
+							}
 					});
 				});
 
