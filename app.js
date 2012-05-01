@@ -104,7 +104,7 @@ io.set('authorization', function (data, accept) {
 	}
 });
 
-var main = io.sockets.on('connection', function (socket) {
+io.sockets.on('connection', function (socket) {
 
 	var hs = socket.handshake;
 	console.log('MAIN ' + hs.sessionID + ' connected!');
@@ -134,10 +134,8 @@ var main = io.sockets.on('connection', function (socket) {
 		c.quit(socket, db);
 	});
 
-	socket.on('refresh', function (channel) {
-		socket.join(channel);
+	socket.on('join', function (channel) {
 		c.join(channel, socket, db);
-		c.refresh(channel, socket, db);
 	});
 
 	socket.on('typing', function (channel) {

@@ -4,6 +4,9 @@ var m = require('./message.js')
   , channels = {};
 
 exports.join = function(channel, socket, db) {
+	
+	socket.join(channel);
+
 	socket.get('user', function (err, user) {
 
 		//incase the old user is still connected.
@@ -21,6 +24,23 @@ exports.join = function(channel, socket, db) {
 		var msg = new m.Message(channel, 'system', user.name + ' joined!', new Date());
 		m.save(msg, db);
 		emitMessage(socket.broadcast.to(msg.channel), msg);
+	});
+	
+	var BSON = mongo.BSONPure;
+	db.collection('messages', function(err, collection) {
+
+		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
+			for (var i in records.reverse()) {
+				if (records[i] != null) {
+					emitMessage(socket, records[i]);
+
+					var next = parseInt(i) + 1;
+					if (next < records.length && utcDay(records[i].timestamp) < utcDay(records[next].timestamp)) {
+						socket.emit('day forward', channel, records[i].timestamp);
+					}
+				}
+			}
+		});
 	});
 };
 
@@ -59,25 +79,6 @@ exports.file = function(channel, user, value, socket, db) {
 	msg.contentType = 'image/png';
 	m.save(msg, db);
 	socket.emit('new file', msg);
-};
-
-exports.refresh = function(channel, socket, db) {
-	var BSON = mongo.BSONPure;
-	db.collection('messages', function(err, collection) {
-
-		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
-			for (var i in records.reverse()) {
-				if (records[i] != null) {
-					emitMessage(socket, records[i]);
-
-					var next = parseInt(i) + 1;
-					if (next < records.length && utcDay(records[i].timestamp) < utcDay(records[next].timestamp)) {
-						socket.emit('day forward', channel, records[i].timestamp);
-					}
-				}
-			}
-		});
-	});
 };
 
 exports.scroll = function(channel, id, socket, db) {

@@ -1,14 +1,14 @@
 module.exports = function(message, socket, db) {
 	var m = require('./message.js');
+	var c = require('./channel.js');
 
 	if (m.getCommand(message)) {
 		var text = null;
 		switch (message.value.match(/^(\/\w*)([ ]|\n)\w*\s*$/)[1]) {
 			case "/join":
-				var c = message.value.match(/^\/\w*[ ](\w*)\n*$/)[1]
-					message.channel = c;
-					message.value = null;
-				socket.emit('join', message);	
+				var channel = message.value.match(/^\/\w*[ ](\w*)\n*$/)[1]
+				socket.emit('join', channel);
+				c.join(channel, socket, db);
 			break;
 			case "/help":
 			default:

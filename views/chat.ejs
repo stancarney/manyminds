@@ -20,7 +20,14 @@
 			$(window).bind('beforeunload', function() { socket.emit('quit'); });
 			setInterval(function() { $("ul#users>li.typing").removeClass("typing"); }, 5000);
 
-			var socket = io.connect('http://localhost:8000/');
+			var socket = io.connect('/');
+			//called from server side on /join command.
+			socket.on('join', function (channel) {
+				configure(channel);
+				$('#tabs a:last').tab('show');
+				//window.history.pushState({}, "Title", "/new-url");
+			});
+			
 			socket.on('new message', function (message) {
 				$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
 				if (!hold[message.channel]) autoScroll(message.channel);
@@ -46,9 +53,9 @@
 
 			var channels = querystring()['c'];
 			for(i in channels) {
-				var channel = channels[i];
-				configure(channel);
-				socket.emit('refresh', channel);
+				configure(channels[i]);
+				socket.emit('join', channels[i]);
+				$('#tabs a:first').tab('show');
 			}
 
 			function configure(channel) {
@@ -65,7 +72,6 @@
 
 				//setup tabs
 				$('#tabs').append('<li><a id="'+ channel +'" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '</a></li>');
-				$('#tabs a:first').tab('show');
 
 				autoScroll(channel);
 
