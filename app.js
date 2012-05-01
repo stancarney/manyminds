@@ -104,10 +104,10 @@ io.set('authorization', function (data, accept) {
 	}
 });
 
-io.sockets.on('connection', function (socket) {
+var main = io.sockets.on('connection', function (socket) {
 
 	var hs = socket.handshake;
-	console.log('A socket with sessionID ' + hs.sessionID + ' connected!');
+	console.log('MAIN ' + hs.sessionID + ' connected!');
 
 	var intervalID = setInterval(function () {
 		hs.session.reload(function () {
@@ -118,7 +118,7 @@ io.sockets.on('connection', function (socket) {
 	socket.set('user', hs.session.user);
 
 	socket.on('disconnect', function () {
-		console.log('A socket with sessionID ' + hs.sessionID + ' disconnected!');
+		console.log('MAIN ' + hs.sessionID + ' disconnected!');
 		clearInterval(intervalID);
 	});
 
@@ -134,11 +134,10 @@ io.sockets.on('connection', function (socket) {
 		c.quit(socket, db);
 	});
 
-	socket.on('refresh', function (channels) {
-		for(var i in channels) {
-			c.join(channels[i], socket, db);
-			c.refresh(channels[i], socket, db);
-		}
+	socket.on('refresh', function (channel) {
+		socket.join(channel);
+		c.join(channel, socket, db);
+		c.refresh(channel, socket, db);
 	});
 
 	socket.on('typing', function (channel) {

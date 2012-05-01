@@ -12,173 +12,126 @@
 	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css"></link>
 	<script>
 		$(document).ready(function() {
-			var socket;
-			var connected = false;
-			
 			var typing = {};
 			var hold = {};
 			var loading = {};
 
-			$(document).bind('drop dragover', function (e) {
-					e.preventDefault();
+			$(document).bind('drop dragover', function (e) { e.preventDefault();});
+			$(window).bind('beforeunload', function() { socket.emit('quit'); });
+			setInterval(function() { $("ul#users>li.typing").removeClass("typing"); }, 5000);
+
+			var socket = io.connect('http://localhost:8000/');
+			socket.on('new message', function (message) {
+				$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
+				if (!hold[message.channel]) autoScroll(message.channel);
 			});
 
-			connect();
-			
-			socket.emit('refresh', querystring()['c']);
-
-			$(window).bind('beforeunload', function() {
-				socket.emit('quit');
+			socket.on('new file', function (channel, message) {
+				$(contentId(message.channel)).append('<div class="image" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value.path + '</div>');
+				if (!hold[message.channel]) autoScroll(message.channel);
 			});
 
-			setInterval(function() {
-				$("ul#users>li.typing").removeClass("typing");
-			}, 5000);
+			socket.on('old message', function (message) {
+				loading[message.channel] = true;
+				$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
+				$(contentId(message.channel)).scrollTop(1);
+			});
 
-			function connect() {
-				socket = io.connect('http://localhost:8000');
+			socket.on('complete', function (channel) { loading[channel] = false; }); //stop scrolling when the server says it is complete
+			socket.on('day backward', function (channel, timestamp) { $(contentId(channel)).prepend('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>'); });
+			socket.on('day forward', function (channel, timestamp) { $(contentId(channel)).append('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>'); });
+			socket.on('add user', function (channel, username) { $(usersId(channel)).append('<li style="list-style-type:none" id="user_' + username + '"><i class="icon-user"></i> ' + username + '</li>'); });
+			socket.on('remove user', function (channel, username) { $(userId(channel, username)).remove(); });
+			socket.on('typing', function (channel, username) { $(userId(channel, username)).addClass('typing'); });
 
-				//TODO:Stan this needs to update the URL based on channels joined from another channel
-				socket.on('join', function (channel) {
-					
-					//setup channel vars
-					typing[channel] = false;
-					hold[channel] = false;
-					loading[channel] = false;
-					
-					//Clone dummy channel
-					var newChannel = $('#channel').clone();
-					newChannel.css('display', '');
-					newChannel.attr('id', channel);
-					$('#channels').append(newChannel);
-
-					//setup tabs
-					$('#tabs').append('<li><a id="'+ channel +'" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '</a></li>');
-					$('#tabs a:first').tab('show');
-					
-					autoScroll(channel);
-					
-					//add events
-					$('#tabs #' + channel).on("click", function(e) {
-						autoScroll(channel);
-					});
-					
-					$('a[data-toggle="tab"]').on('shown', function (e) {
-					    autoScroll($(e.target).attr('id'));
-					});
-
-					$(textentryId(channel)).on("keyup", function(e) {
-						var textarea = $(textentryId(channel));
-						if (e.keyCode == 13) {
-							socket.emit('message', channel, textarea.val() );
-							textarea.val('');
-							autoScroll(channel);
-						} else {
-							if (!typing[channel]) {
-								typing[channel] = true;
-								socket.emit('typing', channel);
-							}
-
-							setTimeout(function() {
-								typing[channel] = false;
-							}, 2000);
-						}
-					});
-
-					$(contentId(channel)).on("scroll", function() {
-						if (!loading[channel]) {
-							if ($(contentId(channel)).scrollTop() == 0) {
-								socket.emit('scroll', channel, $(contentId(channel)).find('div.message').first().attr('id'));
-							}
-
-							if ($(contentId(channel)).scrollTop() + $(contentId(channel)).height() == $(contentId(channel))[0].scrollHeight) {
-								hold[channel] = false;
-								autoScroll(channel);
-							} else {
-								hold[channel] = true;
-							}
-						}
-					});
-
-					$(contentId(channel)).fileupload({
-							dataType: 'json',
-							url: '/upload/' + channel,
-							dropZone: $(contentId(channel)),
-							drop: function (e, data) {
-									$.each(data.files, function (index, file) {
-										$(this).fileupload('send', {files: file});
-									});
-							},
-							done: function (e, data) {
-									$.each(data.result, function (index, file) {
-											$('<p/>').text(file.name).appendTo(document.body);
-									});
-							}
-					});
-				});
-
-				socket.on('new message', function (message) {
-					$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
-					if (!hold[message.channel]) autoScroll(message.channel);
-				});
-				
-				socket.on('new file', function (channel, message) {
-					$(contentId(message.channel)).append('<div class="image" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value.path + '</div>');
-					if (!hold[message.channel]) autoScroll(message.channel);
-				});
-
-				socket.on('old message', function (message) {
-					loading[message.channel] = true;
-					$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
-					$(contentId(message.channel)).scrollTop(1);
-				});
-
-				//stop scrolling when the server says it is complete
-				socket.on('complete', function (channel) {
-					loading[channel] = false;
-				});
-
-				socket.on('day backward', function (channel, timestamp) {
-					$(contentId(channel)).prepend('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>');
-				});
-
-				socket.on('day forward', function (channel, timestamp) {
-					$(contentId(channel)).append('<div class="day"><span class="day">' + new Date(timestamp).toLocaleDateString() + '</span></div>');
-				});
-
-				socket.on('add user', function (channel, username) {
-					$(usersId(channel)).append('<li style="list-style-type:none" id="user_' + username + '"><i class="icon-user"></i> ' + username + '</li>');
-				});
-
-				socket.on('remove user', function (channel, username) {
-					$(userId(channel, username)).remove();
-				});
-
-				socket.on('typing', function (channel, username) {
-					$(userId(channel, username)).addClass('typing');
-				});
+			var channels = querystring()['c'];
+			for(i in channels) {
+				var channel = channels[i];
+				configure(channel);
+				socket.emit('refresh', channel);
 			}
 
+			function configure(channel) {
+				//setup channel vars
+				typing[channel] = false;
+				hold[channel] = false;
+				loading[channel] = false;
+
+				//Clone dummy channel
+				var newChannel = $('#channel').clone();
+				newChannel.css('display', '');
+				newChannel.attr('id', channel);
+				$('#channels').append(newChannel);
+
+				//setup tabs
+				$('#tabs').append('<li><a id="'+ channel +'" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '</a></li>');
+				$('#tabs a:first').tab('show');
+
+				autoScroll(channel);
+
+				//add events
+				$('#tabs #' + channel).on("click", function(e) { autoScroll(channel); });
+				$('a[data-toggle="tab"]').on('shown', function (e) { autoScroll($(e.target).attr('id')); });
+
+				$(textentryId(channel)).on("keyup", function(e) {
+					var textarea = $(textentryId(channel));
+					if (e.keyCode == 13) {
+						socket.emit('message', channel, textarea.val() );
+						textarea.val('');
+						autoScroll(channel);
+					} else {
+						if (!typing[channel]) {
+							typing[channel] = true;
+							socket.emit('typing', channel);
+						}
+
+						setTimeout(function() {
+							typing[channel] = false;
+						}, 2000);
+					}
+				});
+
+				$(contentId(channel)).on("scroll", function() {
+					if (!loading[channel]) {
+						if ($(contentId(channel)).scrollTop() == 0) {
+							socket.emit('scroll', channel, $(contentId(channel)).find('div.message').first().attr('id'));
+						}
+
+						if ($(contentId(channel)).scrollTop() + $(contentId(channel)).height() == $(contentId(channel))[0].scrollHeight) {
+							hold[channel] = false;
+							autoScroll(channel);
+						} else {
+							hold[channel] = true;
+						}
+					}
+				});
+
+				$(contentId(channel)).fileupload({
+						dataType: 'json',
+						url: '/upload/' + channel,
+						dropZone: $(contentId(channel)),
+						drop: function (e, data) {
+								$.each(data.files, function (index, file) {
+									$(this).fileupload('send', {files: file});
+								});
+						},
+						done: function (e, data) {
+								$.each(data.result, function (index, file) {
+										$('<p/>').text(file.name).appendTo(document.body);
+								});
+						}
+				});
+			}
+			
 			function autoScroll(channel) {
 				var element = $(contentId(channel));
 				element.animate({scrollTop: element[0].scrollHeight}, 0);
 			}
 
-			function userId(channel, username) {
-				return '#' + channel + ' #user_' + username;
-			}
-			
-			function usersId(channel) {
-				return '#' + channel + ' #users';
-			}
-			
-			function contentId(channel) {
-				return '#' + channel + ' #content';
-			}
-
-			function textentryId(channel) {
-				return '#' + channel + ' #textentry';
-			}
+			function userId(channel, username) { return '#' + channel + ' #user_' + username; }
+			function usersId(channel) { return '#' + channel + ' #users'; }
+			function contentId(channel) { return '#' + channel + ' #content'; }
+			function textentryId(channel) { return '#' + channel + ' #textentry'; }
 			
 			function querystring() {
 				var nvpair = {};

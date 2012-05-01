@@ -5,14 +5,13 @@ var m = require('./message.js')
 
 exports.join = function(channel, socket, db) {
 	socket.get('user', function (err, user) {
-		socket.emit('join', channel);
 
 		//incase the old user is still connected.
 		removeUser(channel, user);
-		socket.broadcast.emit('remove user', channel, user.name);
+		socket.broadcast.to(channel).emit('remove user', channel, user.name);
 		
 		addUser(channel, user);
-		socket.broadcast.emit('add user', channel, user.name);
+		socket.broadcast.to(channel).emit('add user', channel, user.name);
 
 		var c = channels[channel];
 		for (var i in c) {
@@ -21,7 +20,7 @@ exports.join = function(channel, socket, db) {
 
 		var msg = new m.Message(channel, 'system', user.name + ' joined!', new Date());
 		m.save(msg, db);
-		emitMessage(socket.broadcast, msg);
+		emitMessage(socket.broadcast.to(msg.channel), msg);
 	});
 };
 
@@ -33,9 +32,9 @@ exports.quit = function(socket, db) {
 				if(v[u] == user.name) {
 					var msg = new m.Message(c, 'system', user.name + ' quit!', new Date());
 					m.save(msg, db);
-					emitMessage(socket.broadcast, msg);
+					emitMessage(socket.broadcast.to(msg.channel), msg);
 					removeUser(c, user);
-					socket.broadcast.emit('remove user', c, user.name);
+					socket.emit('remove user', c, user.name);
 				}
 			}
 		}
@@ -49,7 +48,7 @@ exports.message = function(channel, value, socket, db) {
 		if (!commands(msg, socket, db)) {
 			m.save(msg, db);
 			emitMessage(socket, msg);
-			emitMessage(socket.broadcast, msg);
+			emitMessage(socket.broadcast.to(channel), msg);
 		}
 	});
 };
@@ -104,7 +103,7 @@ exports.scroll = function(channel, id, socket, db) {
 
 exports.typing = function(channel, socket, db) {
 	socket.get('user', function (err, user) {
-		socket.volatile.broadcast.emit('typing', channel, user.name);
+		socket.volatile.broadcast.to(channel).emit('typing', channel, user.name);
 	});
 };
 
