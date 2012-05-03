@@ -25,7 +25,7 @@
 			socket.on('join', function (channel) {
 				configure(channel);
 				$('#tabs a:last').tab('show');
-				//window.history.pushState({}, "Title", "/new-url");
+				window.history.pushState({}, "", window.location.search + "&c=" + channel);
 			});
 			
 			socket.on('new message', function (message) {
