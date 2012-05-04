@@ -8,6 +8,8 @@ var express = require('express')
 		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {})
 		, parseCookie = require('connect').utils.parseCookie
 		, urlParser = require('url')
+		, path = require('path')
+		, fs = require('fs')
 		, queryString = require('querystring')
 		, utils = require('./utils.js')()
 		, c = require('./channel.js');
@@ -79,10 +81,32 @@ app.post('/upload/:channel', function (req, res) {
 
 	for (i in req.files){
 		var file = req.files[i];
-		c.file(channel, user, file, io.sockets, db);
+		c.file(channel, user, file, io.sockets.in(channel), db);
 	}
 
 	console.log('channel: ' + channel + ' received file: ' + req.files + ' for: ' + user.name + ' ');
+});
+
+app.get('/img/:img', function (req, res) {
+	var filePath = '/tmp/' + req.params.img;
+	path.exists(filePath, function(exists) {
+		if (exists) {
+			fs.readFile(filePath, function(error, content) {
+				if (error) {
+					res.writeHead(500);
+					res.end();
+				}
+				else {
+					res.writeHead(200, { 'Content-Type': 'text/html' });
+					res.end(content, 'utf-8');
+				}
+			});
+		}
+		else {
+			res.writeHead(404);
+			res.end();
+		}
+	});
 });
 
 io.set('authorization', function (data, accept) {

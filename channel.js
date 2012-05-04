@@ -75,10 +75,12 @@ exports.message = function(channel, value, socket, db) {
 
 exports.file = function(channel, user, value, socket, db) {
 	var msg = new m.Message(channel, user.name, value, new Date());
-	msg.file = 'file';
-	msg.contentType = 'image/png';
+	var f = value[0];
+	msg.filename = f.filename;
+	msg.path = f.path.replace(/\/tmp/g,"/img");
+	msg.mime = f.type;
 	m.save(msg, db);
-	socket.emit('new file', msg);
+	emitMessage(socket, msg);
 };
 
 exports.scroll = function(channel, id, socket, db) {

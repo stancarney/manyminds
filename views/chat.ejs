@@ -29,18 +29,13 @@
 			});
 			
 			socket.on('new message', function (message) {
-				$(contentId(message.channel)).append('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
-				if (!hold[message.channel]) autoScroll(message.channel);
-			});
-
-			socket.on('new file', function (channel, message) {
-				$(contentId(message.channel)).append('<div class="image" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value.path + '</div>');
+				$(contentId(message.channel)).append(messageDiv(message));
 				if (!hold[message.channel]) autoScroll(message.channel);
 			});
 
 			socket.on('old message', function (message) {
 				loading[message.channel] = true;
-				$(contentId(message.channel)).prepend('<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>');
+				$(contentId(message.channel)).prepend(messageDiv(message));
 				$(contentId(message.channel)).scrollTop(1);
 			});
 
@@ -132,6 +127,20 @@
 			function autoScroll(channel) {
 				var element = $(contentId(channel));
 				element.animate({scrollTop: element[0].scrollHeight}, 0);
+			}
+
+			function messageDiv(message) {
+				var div = null;
+				switch (message.mime) {
+					case 'image/jpeg':
+					case 'image/png':
+						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img src="' + message.path + '" alt="'+ message.filename + '" height="200" width="600"/></div>';
+						break;
+					case 'text/plain':
+					default:
+						div =  '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>';
+				}
+				return div;
 			}
 
 			function userId(channel, username) { return '#' + channel + ' #user_' + username; }
