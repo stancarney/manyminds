@@ -16,8 +16,8 @@
 			var hold = {};
 			var loading = {};
 
-			$(document).bind('drop dragover', function (e) { e.preventDefault();});
-			$(window).bind('beforeunload', function() { socket.emit('quit'); });
+			$(document).on('drop dragover', function (e) { e.preventDefault();});
+			$(window).on('beforeunload', function() { socket.emit('quit'); });
 			setInterval(function() { $("ul#users>li.typing").removeClass("typing"); }, 5000);
 
 			var socket = io.connect('/');
@@ -51,6 +51,16 @@
 				configure(channels[i]);
 				socket.emit('join', channels[i]);
 				$('#tabs a:first').tab('show');
+			}
+
+			function isScrolledIntoView(elem) {
+				var docViewTop = $(window).scrollTop();
+				var docViewBottom = docViewTop + $(window).height();
+
+				var elemTop = $(elem).offset().top;
+				var elemBottom = elemTop + $(elem).height();
+
+				return ((elemTop <= docViewBottom) && (elemBottom >= docViewTop));
 			}
 
 			function configure(channel) {
@@ -93,6 +103,15 @@
 				});
 
 				$(contentId(channel)).on("scroll", function() {
+					$('img.lazy').each(function(index) {
+						var viewable = isScrolledIntoView($(this));
+						if(viewable && $(this).attr('orig')){
+							$(this).attr('src', $(this).attr("orig")).removeAttr('orig');
+						} else if(!viewable && $(this).attr('orig') == undefined) {
+							$(this).attr('orig', $(this).attr("src"));
+							$(this).attr('src', '/public/img/grey.gif');
+						}
+					});
 					if (!loading[channel]) {
 						if ($(contentId(channel)).scrollTop() == 0) {
 							socket.emit('scroll', channel, $(contentId(channel)).find('div.message').first().attr('id'));
@@ -134,7 +153,7 @@
 				switch (message.mime) {
 					case 'image/jpeg':
 					case 'image/png':
-						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img src="' + message.path + '" alt="'+ message.filename + '" height="200" width="600"/></div>';
+						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '" height="200" width="600"/></div>';
 						break;
 					case 'text/plain':
 					default:
