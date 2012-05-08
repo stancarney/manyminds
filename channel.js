@@ -44,20 +44,28 @@ exports.join = function(channel, socket, db) {
 	});
 };
 
+//leaves all channels
 exports.quit = function(socket, db) {
 	socket.get('user', function (err, user) {
-		for (var c in channels) {
-			var v = channels[c];
-			for (var u in v) {
-				if(v[u] == user.name) {
-					var msg = new m.Message(c, 'system', user.name + ' quit!', new Date());
-					m.save(msg, db);
-					emitMessage(socket.broadcast.to(msg.channel), msg);
-					removeUser(c, user);
-					socket.emit('remove user', c, user.name);
+		for (var channel in channels) {
+			var users = channels[channel];
+			for (var u in users) {
+				if(users[u] == user.name) {
+					exports.leave(channel, socket, db);
 				}
 			}
 		}
+	})
+};
+
+//leaves given channel
+exports.leave = function(channel, socket, db) {
+	socket.get('user', function (err, user) {
+		var msg = new m.Message(channel, 'system', user.name + ' quit!', new Date());
+		m.save(msg, db);
+		emitMessage(socket.broadcast.to(channel), msg);
+		removeUser(channel, user);
+		socket.broadcast.to(channel).emit('remove user', channel, user.name);
 	});
 };
 

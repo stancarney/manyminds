@@ -12,6 +12,7 @@
 	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css"></link>
 	<script>
 		$(document).ready(function() {
+			var channels = querystring()['c'];
 			var typing = {};
 			var hold = {};
 			var loading = {};
@@ -23,9 +24,12 @@
 			var socket = io.connect('/');
 			//called from server side on /join command.
 			socket.on('join', function (channel) {
-				configure(channel);
+				addChannel(channel);
+				channels.push(channel);
+				updateQueryString();
+
 				$('#tabs a:last').tab('show');
-				window.history.pushState({}, "", window.location.search + "&c=" + channel);
+				$(textentryId(channel)).focus();
 			});
 			
 			socket.on('new message', function (message) {
@@ -46,24 +50,13 @@
 			socket.on('remove user', function (channel, username) { $(userId(channel, username)).remove(); });
 			socket.on('typing', function (channel, username) { $(userId(channel, username)).addClass('typing'); });
 
-			var channels = querystring()['c'];
 			for(i in channels) {
-				configure(channels[i]);
+				addChannel(channels[i]);
 				socket.emit('join', channels[i]);
 				$('#tabs a:first').tab('show');
 			}
 
-			function isScrolledIntoView(elem) {
-				var docViewTop = $(window).scrollTop();
-				var docViewBottom = docViewTop + $(window).height();
-
-				var elemTop = $(elem).offset().top;
-				var elemBottom = elemTop + $(elem).height();
-
-				return ((elemTop <= docViewBottom) && (elemBottom >= docViewTop));
-			}
-
-			function configure(channel) {
+			function addChannel(channel) {
 				//setup channel vars
 				typing[channel] = false;
 				hold[channel] = false;
@@ -75,14 +68,17 @@
 				newChannel.attr('id', channel);
 				$('#channels').append(newChannel);
 
-				//setup tabs
-				$('#tabs').append('<li><a id="'+ channel +'" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '</a></li>');
-
 				autoScroll(channel);
-
-				//add events
+				
+				$('#tabs').append('<li><a id="'+ channel +'" href="#" class="tab" data-toggle="tab" data-target="#channels #' + channel + '">' + channel + '&nbsp;<i id="leave_' + channel + '" class="icon-remove"></i></a></li>');
 				$('#tabs #' + channel).on("click", function(e) { autoScroll(channel); });
 				$('a[data-toggle="tab"]').on('shown', function (e) { autoScroll($(e.target).attr('id')); });
+				
+				$(leaveId(channel)).on('click', function() {
+					removeChannel(channel);
+				}).mouseover(function() {
+          $(this).addClass('pointer');
+				});
 
 				$(textentryId(channel)).on("keyup", function(e) {
 					var textarea = $(textentryId(channel));
@@ -142,7 +138,20 @@
 						}
 				});
 			}
-			
+
+			function updateQueryString() {
+				window.history.pushState({}, "", "?c=" + channels.join("&c="));
+			}
+
+			function removeChannel(channel) {
+				var index = channels.indexOf(channel);
+				if(index != -1) channels.splice(index, 1);
+				updateQueryString();
+				socket.emit('leave', channel);
+				$(contentId(channel)).remove();
+				$("#" + channel).remove();
+			}
+
 			function autoScroll(channel) {
 				var element = $(contentId(channel));
 				element.animate({scrollTop: element[0].scrollHeight}, 0);
@@ -162,10 +171,19 @@
 				return div;
 			}
 
+			function isScrolledIntoView(elem) {
+				var docViewTop = $(window).scrollTop();
+				var docViewBottom = docViewTop + $(window).height();
+				var elemTop = $(elem).offset().top;
+				var elemBottom = elemTop + $(elem).height();
+				return ((elemTop <= docViewBottom) && (elemBottom >= docViewTop));
+			}
+
 			function userId(channel, username) { return '#' + channel + ' #user_' + username; }
 			function usersId(channel) { return '#' + channel + ' #users'; }
 			function contentId(channel) { return '#' + channel + ' #content'; }
 			function textentryId(channel) { return '#' + channel + ' #textentry'; }
+			function leaveId(channel) { return '#leave_' + channel; }
 			
 			function querystring() {
 				var nvpair = {};
@@ -203,6 +221,10 @@
 
 		.typing {
 			color: #C43C35;
+		}
+
+		.pointer {
+			cursor:pointer;
 		}
 
 		div.day {

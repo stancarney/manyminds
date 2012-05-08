@@ -162,6 +162,10 @@ io.sockets.on('connection', function (socket) {
 		c.join(channel, socket, db);
 	});
 
+	socket.on('leave', function (channel) {
+		c.leave(channel, socket, db);
+	});
+
 	socket.on('typing', function (channel) {
 		c.typing(channel, socket, db);
 	});
