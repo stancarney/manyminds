@@ -6,13 +6,6 @@ exports.Message = function (channel, username, value, timestamp) {
 	this.mime = 'text/plain';
 }
 
-exports.getCommand = function (message) {
-	var match = message.value.match(/^\/.*/);
-	if(match != null){
-		return match[0];
-	}
-}
-
 exports.save = function (message, db) {
 	try {
 		db.collection('messages', function(err, collection) {
