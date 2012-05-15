@@ -178,7 +178,7 @@
 				switch (message.mime) {
 					case 'image/jpeg':
 					case 'image/png':
-						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '"/></div>';
+						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '" height="' + message.height + '" width="' + message.width + '"/></div>';
 						break;
 					case 'text/plain':
 					default:

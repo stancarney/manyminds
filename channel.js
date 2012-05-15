@@ -1,5 +1,6 @@
 var m = require('./message.js')
 	, mongo = require('mongodb')
+	, im = require('imagemagick')
 	, commands = require('./commands.js')
   , channels = {};
 
@@ -82,13 +83,18 @@ exports.message = function(channel, value, socket, db) {
 };
 
 exports.file = function(channel, user, value, socket, db) {
-	var msg = new m.Message(channel, user.name, value, new Date());
 	var f = value[0];
-	msg.filename = f.filename;
-	msg.path = f.path.replace(/\/tmp/g,"/img");
-	msg.mime = f.type;
-	m.save(msg, db);
-	emitMessage(socket, msg);
+	im.identify(f.path, function(err, features) {
+		if (err) throw err
+		var msg = new m.Message(channel, user.name, value, new Date());
+		msg.filename = f.filename;
+		msg.path = f.path.replace(/\/tmp/g,"/img");
+		msg.mime = f.type;
+		msg.width = features.width;
+		msg.height = features.height;
+		m.save(msg, db);
+		emitMessage(socket, msg);
+	});
 };
 
 exports.scroll = function(channel, id, socket, db) {
