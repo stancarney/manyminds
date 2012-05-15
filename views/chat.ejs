@@ -8,7 +8,10 @@
 	        src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
 	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-tab.js"></script>
 	<script type="text/javascript" src="//twitter.github.com/bootstrap/assets/js/bootstrap-dropdown.js"></script>
+	<script src="http://blueimp.github.com/JavaScript-Load-Image/load-image.min.js"></script>
+	<script src="http://blueimp.github.com/JavaScript-Canvas-to-Blob/canvas-to-blob.min.js"></script>
 	<script type="text/javascript" src="https://raw.github.com/blueimp/jQuery-File-Upload/master/js/jquery.fileupload.js"></script>
+	<script type="text/javascript" src="https://raw.github.com/blueimp/jQuery-File-Upload/master/js/jquery.fileupload-fp.js"></script>
 	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css"></link>
 	<script>
 		$(document).ready(function() {
@@ -126,6 +129,19 @@
 						dataType: 'json',
 						url: '/upload/' + channel,
 						dropZone: $(contentId(channel)),
+						process: [{
+							action: 'load',
+							fileTypes: /^image\/(gif|jpeg|png)$/,
+							maxFileSize: 20000000 // 20MB
+						},
+						{
+							action: 'resize',
+							maxWidth: 500,
+							maxHeight: 500
+						},
+						{
+							action: 'save'
+						}],
 						drop: function (e, data) {
 								$.each(data.files, function (index, file) {
 									$(this).fileupload('send', {files: file});
@@ -162,7 +178,7 @@
 				switch (message.mime) {
 					case 'image/jpeg':
 					case 'image/png':
-						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '" height="200" width="600"/></div>';
+						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '"/></div>';
 						break;
 					case 'text/plain':
 					default:
