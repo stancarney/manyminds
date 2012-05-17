@@ -95,14 +95,12 @@ app.get('/img/:img', function (req, res) {
 				if (error) {
 					res.writeHead(500);
 					res.end();
-				}
-				else {
-					res.writeHead(200, { 'Content-Type': 'text/html' });
+				} else {
+					res.writeHead(200);
 					res.end(content, 'utf-8');
 				}
 			});
-		}
-		else {
+		} else {
 			res.writeHead(404);
 			res.end();
 		}
