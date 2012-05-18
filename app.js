@@ -45,7 +45,7 @@ app.configure(function() {
 	});
 });
 
-app.listen(8000);
+app.listen(process.env['app_port'] || 8000);
 
 app.get('/', function (req, res) {
 	res.render(__dirname + '/views/index');
