@@ -5,7 +5,7 @@ var express = require('express')
 		, sessionStore = new MemoryStore()
 		, io = require('socket.io').listen(app)
 		, mongo = require('mongodb')
-		, db = new mongo.Db('wayd', new mongo.Server('localhost', 27017, {}), {})
+		, db = new mongo.Db('manyminds', new mongo.Server('localhost', 27017, {}), {})
 		, parseCookie = require('connect').utils.parseCookie
 		, urlParser = require('url')
 		, path = require('path')
@@ -60,7 +60,7 @@ app.post('/login', function (req, res) {
 				res.redirect('/chat?c=' + req.body.channels.replace(/ /g,"&c="));
 			} else {
 				res.writeHead(403);
-				res.end('Sorry you are unauthorized.\n\nFor a login use: /login?name=max&pwd=herewego');
+				res.end('Auth failed.');
 			}
 		});
 	});
@@ -169,5 +169,12 @@ io.sockets.on('connection', function (socket) {
 	});
 });
 
-db.open(function() {
+db.open(function(err, data) {
+	if(data) {
+		data.authenticate(null, null, function(err2, data2) {
+			if(err2) console.log(err2);
+		});
+	} else {
+		console.log(err);
+	}
 });
