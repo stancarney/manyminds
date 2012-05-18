@@ -4,8 +4,10 @@ module.exports = function(msg, socket, db) {
 		, e = require('./email.js')
 		, password = require('password');
 
-	var helpText = "<strong>/help</strong><br/>" +
-					"<strong>/adduser</strong> username email<br/>";
+	var helpText = "<div> \
+									<div><strong>/help</strong></div> \
+									<div><strong>/adduser</strong> username email</div> \
+									</div>";
 	
 	var match = msg.value.match(/^\/.*\s?$/);
 	if(match != null){

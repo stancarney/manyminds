@@ -84,24 +84,23 @@ exports.message = function(channel, value, socket, db) {
 
 exports.file = function(channel, user, value, socket, db) {
 	var f = value[0];
+	console.log("file type: " + f.type);
+	var msg = new m.Message(channel, user.name, value, new Date());
+	msg.filename = f.filename;
+	msg.mime = f.type;
+	msg.path = f.path.replace(/\/tmp/g,"/f");
 	switch (f.type) {
-				case "image/png":
-				case "image/jpeg":
-						im.identify(f.path, function(err, features) {
-							if (err) throw err
-							var msg = new m.Message(channel, user.name, value, new Date());
-							msg.filename = f.filename;
-							msg.path = f.path.replace(/\/tmp/g,"/img");
-							msg.mime = f.type;
-							msg.width = features.width;
-							msg.height = features.height;
-							m.save(msg, db);
-							emitMessage(socket, msg);
-						});
-				break;
-				default:
-					console.log("unknown file type: " + f.type);
+		case "image/png":
+		case "image/jpeg":
+				im.identify(f.path, function(err, features) {
+					if (err) throw err
+					msg.width = features.width;
+					msg.height = features.height;
+				});
+		default:
+			m.save(msg, db);
 	}
+	emitMessage(socket, msg);
 };
 
 exports.scroll = function(channel, id, socket, db) {

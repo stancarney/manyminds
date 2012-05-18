@@ -87,8 +87,8 @@ app.post('/upload/:channel', function (req, res) {
 	console.log('channel: ' + channel + ' received file: ' + req.files + ' for: ' + user.name + ' ');
 });
 
-app.get('/img/:img', function (req, res) {
-	var filePath = '/tmp/' + req.params.img;
+app.get('/f/:file', function (req, res) {
+	var filePath = '/tmp/' + req.params.file;
 	path.exists(filePath, function(exists) {
 		if (exists) {
 			fs.readFile(filePath, function(error, content) {

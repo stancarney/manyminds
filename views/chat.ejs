@@ -106,7 +106,7 @@
 						var viewable = isScrolledIntoView($(this));
 						if(viewable && $(this).attr('orig')){
 							$(this).attr('src', $(this).attr("orig")).removeAttr('orig');
-						} else if(!viewable && $(this).attr('orig') == undefined) {
+						} else if(!viewable && $(this).attr('orig') == undefined) {f
 							$(this).attr('orig', $(this).attr("src"));
 							$(this).attr('src', '/public/img/grey.gif');
 						}
@@ -174,17 +174,20 @@
 			}
 
 			function messageDiv(message) {
-				var div = null;
+				var div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> @@@ </div>';
+				var val = null;
 				switch (message.mime) {
 					case 'image/jpeg':
 					case 'image/png':
-						div = '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong><a href="' + message.path + '"><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '" height="' + message.height + '" width="' + message.width + '"/></a></div>';
+						val = '<a href="' + message.path + '"><img class="lazy" src="/public/img/grey.gif" orig="' + message.path + '" alt="'+ message.filename + '" height="' + message.height + '" width="' + message.width + '"/></a>';
 						break;
 					case 'text/plain':
+						val =  message.value;
+						break;
 					default:
-						div =  '<div class="message" id=' + message._id + '>' + '[' + new Date(message.timestamp).toLocaleTimeString() + '] <strong>' + message.username + ':</strong> ' + message.value + '</div>';
+						val =  '<a href="' + message.path + '" target="_blank">' + message.filename + '</a>';
 				}
-				return div;
+				return div.replace(/@@@/,val);
 			}
 
 			function isScrolledIntoView(elem) {
@@ -241,6 +244,10 @@
 
 		.pointer {
 			cursor:pointer;
+		}
+
+		.help {
+			display:block;
 		}
 
 		div.day {
