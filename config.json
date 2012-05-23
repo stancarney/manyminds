@@ -1,0 +1,9 @@
+{
+	"db": {
+		"name": "manyminds",
+		"username": null,
+		"password": null,
+		"host": "localhost",
+		"port": 27017
+	}
+}

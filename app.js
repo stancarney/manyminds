@@ -1,3 +1,8 @@
+var nconf = require('nconf');
+nconf.argv()
+       .env()
+       .file({ file: "config.json" });
+
 var express = require('express')
 		, MemoryStore = express.session.MemoryStore
 		, Session = require('connect').middleware.session.Session
@@ -5,7 +10,7 @@ var express = require('express')
 		, sessionStore = new MemoryStore()
 		, io = require('socket.io').listen(app)
 		, mongo = require('mongodb')
-		, db = new mongo.Db('manyminds', new mongo.Server('localhost', 27017, {}), {})
+		, db = new mongo.Db(nconf.get('db')['name'], new mongo.Server(nconf.get('db')['host'], nconf.get('db')['port'], {}), {})
 		, parseCookie = require('connect').utils.parseCookie
 		, urlParser = require('url')
 		, path = require('path')
@@ -171,7 +176,7 @@ io.sockets.on('connection', function (socket) {
 
 db.open(function(err, data) {
 	if(data) {
-		data.authenticate(null, null, function(err2, data2) {
+		data.authenticate(nconf.get('db')['username'], nconf.get('db')['password'], function(err2, data2) {
 			if(err2) console.log(err2);
 		});
 	} else {
