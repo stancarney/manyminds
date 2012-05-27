@@ -28,8 +28,9 @@ var authCheck = function (req, res, next) {
 	}
 
 	if (url.pathname.startsWith("/chat")) {
-		res.writeHead(403);
-		res.end('Sorry you are unauthorized.\n\nFor a login use: /login?name=max&pwd=herewego');
+		//res.writeHead(403);
+		req.flash('error', 'Please login');
+		res.redirect('/');
 		return;
 	}
 
@@ -41,13 +42,28 @@ app.configure(function() {
 	app.use(express.session({store: sessionStore , secret: 'secret' , key: 'express.sid'}));
 	app.use(express.bodyParser());
 	app.use("/public", express.static(__dirname + '/public'));
-	app.use(authCheck);
 	app.set('view engine', 'ejs');
 	app.set('view options', {
 		open: '{{',
 		close: '}}',
 		layout: false
 	});
+	app.use(authCheck);
+});
+
+app.dynamicHelpers({
+  session: function(req, res){
+    return req.session;
+  },
+	request: function(req, res){
+    return req;
+  },
+	info: function (req, res) {
+		return req.flash('info');
+	},
+	error: function (req, res) {
+		return req.flash('error');
+	}
 });
 
 app.listen(process.env['app_port'] || 8000);
@@ -73,7 +89,7 @@ app.post('/login', function (req, res) {
 
 app.get('/logout', function (req, res) {
 	req.session.destroy();
-	res.redirect('/')
+	res.redirect('/');
 });
 
 app.get(/^\/chat\\?(?:&?c=\w*)*$/, function (req, res) {

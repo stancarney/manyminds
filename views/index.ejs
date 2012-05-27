@@ -10,6 +10,9 @@
 		<div class="row">
 			<div class="offset4">
 				<form class="well span3" action="/login" method="POST">
+					{{ if (error != "") { }}
+					<div class="alert alert-error">{{= error }}</div>
+					{{ } }}
 					<fieldset>
 						<div class="span3"><h1>Many Minds</h1></div>
 						<div>
