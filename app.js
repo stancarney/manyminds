@@ -35,7 +35,7 @@ var authCheck = function (req, res, next) {
 	}
 
 	next();
-}
+};
 
 app.configure(function() {
 	app.use(express.cookieParser('secret'));
