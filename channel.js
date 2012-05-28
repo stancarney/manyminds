@@ -5,15 +5,14 @@ var m = require('./message.js')
   , channels = {};
 
 exports.join = function(channel, socket, db) {
-	
-	socket.join(channel);
 
 	socket.get('user', function (err, user) {
+		socket.join(channel);
 
 		//incase the old user is still connected.
 		removeUser(channel, user);
 		socket.broadcast.to(channel).emit('remove user', channel, user.name);
-		
+
 		addUser(channel, user);
 		socket.broadcast.to(channel).emit('add user', channel, user.name);
 
@@ -25,22 +24,21 @@ exports.join = function(channel, socket, db) {
 		var msg = new m.Message(channel, 'system', user.name + ' joined!', new Date());
 		m.save(msg, db);
 		emitMessage(socket.broadcast.to(msg.channel), msg);
-	});
-	
-	var BSON = mongo.BSONPure;
-	db.collection('messages', function(err, collection) {
 
-		collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
-			for (var i in records.reverse()) {
-				if (records[i] != null) {
-					emitMessage(socket, records[i]);
+		var BSON = mongo.BSONPure;
+		db.collection('messages', function(err, collection) {
+			collection.find({'channel': channel}).sort({timestamp: -1}).limit(100).toArray(function(err, records) {
+				for (var i in records.reverse()) {
+					if (records[i] != null) {
+						emitMessage(socket, records[i]);
 
-					var next = parseInt(i) + 1;
-					if (next < records.length && utcDay(records[i].timestamp) < utcDay(records[next].timestamp)) {
-						socket.emit('day forward', channel, records[i].timestamp);
+						var next = parseInt(i) + 1;
+						if (next < records.length && utcDay(records[i].timestamp) < utcDay(records[next].timestamp)) {
+							socket.emit('day forward', channel, records[i].timestamp);
+						}
 					}
 				}
-			}
+			});
 		});
 	});
 };
@@ -74,7 +72,7 @@ exports.message = function(channel, value, socket, db) {
 	socket.get('user', function (err, user) {
 		
 		var msg = new m.Message(channel, user.name, value, new Date());
-		if (!commands(msg, socket, db)) {
+		if (!commands(msg, user, socket, db)) {
 			m.save(msg, db);
 			emitMessage(socket, msg);
 			emitMessage(socket.broadcast.to(channel), msg);
@@ -128,6 +126,13 @@ exports.typing = function(channel, socket, db) {
 	socket.get('user', function (err, user) {
 		socket.volatile.broadcast.to(channel).emit('typing', channel, user.name);
 	});
+};
+
+exports.hasUser = function(channel, user) {
+	for (var users in channels[channel]) {
+		if(users.indexOf(user.name) < 0) return true;
+	}
+	return false;
 };
 
 function utcDay(timestamp) {

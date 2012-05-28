@@ -1,4 +1,4 @@
-module.exports = function(msg, socket, db) {
+module.exports = function(msg, user, socket, db) {
 	var m = require('./message.js')
 		, c = require('./channel.js')
 		, e = require('./email.js')
@@ -11,14 +11,17 @@ module.exports = function(msg, socket, db) {
 	
 	var match = msg.value.match(/^\/.*\s?$/);
 	if(match != null){
-		var text = null;
 		
 		try {
 			switch (msg.value.match(/^(\/\w*)(.*|\n).*\s?$/)[1]) {
 				case "/join":
 					var channel = msg.value.match(/^\/\w*[ ](\w*)\s?$/)[1]
-					socket.emit('join', channel);
-					c.join(channel, socket, db);
+					if(!c.hasUser(channel, user)) {
+						socket.emit('join', channel);
+						c.join(channel, socket, db);
+					} else {
+						emitMessage("Already in channel " + channel);
+					}
 				break;
 				case "/adduser":
 					var pattern = msg.value.match(/^\/\w*[ ](\w*)[ ]([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4})\s?$/i);
