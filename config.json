@@ -5,5 +5,13 @@
 		"password": null,
 		"host": "localhost",
 		"port": 27017
+	},
+	"smtp": {
+		"username": null,
+		"password": null,
+		"host": "mail",
+		"port": 587,
+		"ssl": false,
+		"tls": true
 	}
 }

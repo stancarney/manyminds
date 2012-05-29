@@ -1,4 +1,12 @@
-var email = require('mailer');
+var nconf = require('nconf')
+	, server = require("emailjs").server.connect({
+			user: nconf.get('smtp')['username'],
+			password: nconf.get('smtp')['password'],
+			host: nconf.get('smtp')['host'],
+			port: nconf.get('smtp')['port'],
+			ssl: nconf.get('smtp')['ssl'],
+			tls: nconf.get('smtp')['tls']
+		});
 
 exports.sendWelcome = function(name, email, password) {
 	console.log(name, email, password);
@@ -6,19 +14,11 @@ exports.sendWelcome = function(name, email, password) {
 };
 
 function sendEmail(to, subject, body) {
-	email.send({
-		host : "mail",              // smtp server hostname
-		port : "25",                     // smtp server port
-		domain : "moohoffa.com",            // domain used by client to identify itself to server
-		to : to,
-		//from : "obama@whitehouse.gov",
-		subject : subject,
-		body: body,
-		authentication : "login",        // auth login is supported; anything else is no auth
-		username : "c3Rhbg==",       // Base64 encoded username
-		password : "bXI4YmVhbg=="        // Base64 encoded password
-	},
-	function(err, result){
-		if(err){ console.log("Error occurred trying to send email.", err); }
-	});
+	// send the message and get a callback with an error or details of the message that was sent
+	server.send({
+		 text:    body,
+		 from:    "Many Minds",
+		 to:      to,
+		 subject: subject
+	}, function(err, message) { console.log(err || message); });
 }
