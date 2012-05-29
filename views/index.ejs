@@ -1,31 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.2/bootstrap.min.js"></script>
-	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css">
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.0.3/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="//twitter.github.com/bootstrap/assets/css/bootstrap.css"/>
+	<link rel="stylesheet" href="/public/css/main.css"/>
 </head>
-<body>
+<body class="homepage">
+	<a href="https://github.com/stancarney/manyminds"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
 	<div class="container">
-		<div class="row">
-			<div class="offset4">
-				<form class="well span3" action="/login" method="POST">
+		<div class="row well maincontent span9">
+			<div class="title">
+				<h1>Many Minds</h1>
+			</div>
+			<div class="span5">
+				<p>
+					Many Minds is a web based chat application used to collaborate with remote individuals. It is intented to replace
+					IRC systems and other applications used for the same purpose. It focuses on quickly exchanging messages, images and other content.
+				</p>
+				<p>
+					<dl class="dl-horizontal">
+						<dt>Multiple Channels</dt>
+						<dd>Participate in multiple conversations the same time.</dd>
+						<dt>Drag and Drop</dt>
+						<dd>Most files can be dropped into the content window and available for download. Known file types such as images
+							are resized and displayed in the chat.</dd>
+						<dt>Infinite Scrolling</dt>
+						<dd>Scroll back through prior messages.</dd>
+					</dl>
+				</p>
+				<p>
+					Please see the <a href="https://github.com/stancarney/manyminds">Many Minds</a> project page on Github for more information.
+				</p>
+			</div>
+			<div class="offset5">
+				<form class="span3 well" style="background-color: #ff7600;" action="/login" method="POST">
 					{{ if (error != "") { }}
 					<div class="alert alert-error">{{= error }}</div>
 					{{ } }}
 					<fieldset>
-						<div class="span3"><h1>Many Minds</h1></div>
 						<div>
-							<input class="span3" id="username" name="username" type="text" placeholder="username" value="username">
+							<input class="span3" id="username" name="username" type="text" placeholder="username" value="username"/>
 						</div>
 						<div>
-							<input class="span3" id="password" name="password" type="text" placeholder="password" value="password">
+							<input class="span3" id="password" name="password" type="text" placeholder="password" value="password"/>
 						</div>
 						<div>
-							<input class="span3" id="channels" name="channels" type="text" placeholder="channel(s)" value="test mychan">
+							<input class="span3" id="channels" name="channels" type="text" placeholder="channel(s)" value="test mychan"/>
 						</div>
-						<div>
-							<input class="span3 btn btn-large btn-primary" type="submit" value="GO!"/>
+						<div class="go">
+							<input class="btn btn-large btn-primary" type="submit" value="GO!"/>
 						</div>
 					</fieldset>
 				</form>
