@@ -1,17 +1,13 @@
 {
-	"db": {
-		"name": "manyminds",
-		"username": null,
-		"password": null,
-		"host": "localhost",
-		"port": 27017
-	},
-	"smtp": {
-		"username": null,
-		"password": null,
-		"host": "mail",
-		"port": 587,
-		"ssl": false,
-		"tls": true
-	}
+	"db_name": "manyminds",
+	"db_username": null,
+	"db_password": null,
+	"db_host": "localhost",
+	"db_port": 27017,
+	"smtp_username": null,
+	"smtp_password": null,
+	"smtp_host": "mail",
+	"smtp_port": 587,
+	"smtp_ssl": false,
+	"smtp_tls": true
 }

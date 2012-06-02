@@ -1,11 +1,11 @@
 var nconf = require('nconf')
 	, server = require("emailjs").server.connect({
-			user: nconf.get('smtp')['username'],
-			password: nconf.get('smtp')['password'],
-			host: nconf.get('smtp')['host'],
-			port: nconf.get('smtp')['port'],
-			ssl: nconf.get('smtp')['ssl'],
-			tls: nconf.get('smtp')['tls']
+			user: nconf.get('smtp_username'),
+			password: nconf.get('smtp_password'),
+			host: nconf.get('smtp_host'),
+			port: nconf.get('smtp_port'),
+			ssl: nconf.get('smtp_ssl'),
+			tls: nconf.get('smtp_tls')
 		});
 
 exports.sendWelcome = function(name, email, password) {
