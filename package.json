@@ -1,0 +1,24 @@
+{
+  "name": "manyminds",
+  "version": "0.1.0",
+  "author": "Stan Carney &lt;stan.carney&amp;rootsh.me&gt;",
+  "description": "Chat Server",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "connect": "*",
+    "ejs": "*",
+    "express": "*",
+    "imagemagick": "*",
+    "emailjs": "*",
+    "mongodb": "*",
+    "nconf": "*",
+    "password": "*",
+    "socket.io": "*"
+  },
+  "license": "GPLv3",
+  "engine": {
+    "node": ">= 0.6.8"
+  }
+}
